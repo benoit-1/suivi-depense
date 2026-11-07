@@ -135,6 +135,10 @@
   .cumbox{border:1px solid var(--grid);border-radius:10px;padding:12px 14px;margin:0 0 16px;background:var(--surface)}
   .cumt{font-weight:600;margin-bottom:8px} .cumt span{font-weight:400;color:var(--ink2);font-size:13px}
   table.cum td,table.cum th{padding:6px 8px} table.cum tr.hl1 td{background:var(--hl)}
+  .myrtiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+  .myrt{border:1px solid var(--grid);border-radius:10px;padding:12px 14px;background:var(--surface)}
+  .myrt.cur{border-color:var(--s1);background:var(--hl)}
+  .myrt .l{font-size:12px;color:var(--ink2)} .myrt .v{font-size:24px;font-weight:700;margin-top:4px;white-space:nowrap} .myrt .n{font-size:12.5px;color:var(--ink2);margin-top:2px}
   .rptiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
   .rpt{border:1px solid var(--grid);border-radius:10px;padding:12px 14px;background:var(--surface)}
   .rpt .l{font-size:12px;color:var(--ink2)} .rpt .l{min-height:30px} .rpt .v{font-size:24px;font-weight:600;margin-top:4px} .rpt .n{font-size:12.5px;color:var(--ink2);margin-top:2px}
@@ -287,6 +291,17 @@
     <div class="scroll"><table class="mx" id="matrix"></table></div>
   </section>
 
+  <section class="card" id="multiCard">
+    <div class="ch">
+      <div><h2>Comparaison sur plusieurs années</h2><p class="sub" id="myrSub"></p></div>
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <span style="font-size:13px;color:var(--ink2)">Période :</span>
+        <div class="seg" id="myrSeg"><button data-p="ytd">Même période</button><button data-p="year">Année entière</button></div>
+      </div>
+    </div>
+    <div id="myrBody"></div>
+  </section>
+
   <section class="card">
     <div class="ch">
       <div><h2>Évolution d'une famille</h2><p class="sub">Montant mensuel de la famille choisie, comparé à l'année précédente (variation affichée au-dessus des barres)</p></div>
@@ -332,9 +347,9 @@
 
 <script>
 /* ===== VERSION : à augmenter à chaque mise à jour ===== */
-const APP_VERSION = '1.3';
+const APP_VERSION = '1.4';
 const APP_DATE = '07/11/2026';
-const APP_NOTES = 'Correction 1.3 : le formulaire « Saisie du mois » suit toujours le mois et l\'année choisis en haut. — 1.2 : détail du stock par catégorie (Alimentaire, Nutrisens, Boissons, Consommable, Autre). — 1.1 : boissons par repas, stock de fin de mois, variation de stock et consommation réelle. — 1.0 : saisie mensuelle, comparaison N-1, prix de revient, cumul depuis janvier.';
+const APP_NOTES = 'Nouveau en 1.4 : comparaison sur plusieurs années (montants, évolution, prix par repas). — 1.3 : le formulaire « Saisie du mois » suit toujours le mois et l\'année choisis en haut. — 1.2 : détail du stock par catégorie (Alimentaire, Nutrisens, Boissons, Consommable, Autre). — 1.1 : boissons par repas, stock de fin de mois, variation de stock et consommation réelle. — 1.0 : saisie mensuelle, comparaison N-1, prix de revient, cumul depuis janvier.';
 /* ====================================================== */
 const MONTHS = ['Janv.','Févr.','Mars','Avr.','Mai','Juin','Juil.','Août','Sept.','Oct.','Nov.','Déc.'];
 const MONTHS_L = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
@@ -498,7 +513,7 @@ function moveTip(e){ const w=tip.offsetWidth; tip.style.left = Math.min(e.client
 function hideTip(){ tip.style.opacity=0; }
 
 /* ---------- chart helpers ---------- */
-function niceMax(v){ if(v<=0) return 1; const p=Math.pow(10,Math.floor(Math.log10(v))); const n=v/p; return (n<=1?1:n<=2?2:n<=4?4:n<=6?6:n<=8?8:10)*p; }
+function niceMax(v){ if(v<=0) return 1; const p=Math.pow(10,Math.floor(Math.log10(v))); const n=v/p; return (n<=1?1:n<=1.2?1.2:n<=1.6?1.6:n<=2?2:n<=2.4?2.4:n<=3.2?3.2:n<=4?4:n<=6?6:n<=8?8:10)*p; }
 function axisFmt(v){ return v>=1000 ? (v/1000).toLocaleString('fr-FR',{maximumFractionDigits:1})+' k€' : Math.round(v)+' €'; }
 const barPath = (x,y0,yt,w) => { const h=y0-yt, r=Math.min(3,h,w/2); return `M${x},${y0} V${yt+r} Q${x},${yt} ${x+r},${yt} H${x+w-r} Q${x+w},${yt} ${x+w},${yt+r} V${y0} Z`; };
 
@@ -718,6 +733,69 @@ function drawMatrix(){
   $('matrix').innerHTML = h;
 }
 
+/* ---------- multi-year comparison ---------- */
+const dataYears = () => { const ys=new Set();
+  leaves().forEach(l=>Object.entries(l.o.y||{}).forEach(([y,a])=>{ if(a.some(v=>v!=null&&v!==0)) ys.add(+y); }));
+  Object.entries(S.meals||{}).forEach(([y,a])=>{ if(a.some(v=>v)) ys.add(+y); });
+  return [...ys].sort((a,b)=>a-b).slice(-6); };
+function drawMulti(){
+  const B=$('myrBody'), ytd = S.myrP!=='year', mEnd = ytd ? S.sel : 11;
+  document.querySelectorAll('#myrSeg button').forEach(b=>b.classList.toggle('on', b.dataset.p===(ytd?'ytd':'year')));
+  const Y = dataYears();
+  $('myrSub').textContent = ytd ? `Janvier → ${MONTHS_L[S.sel]} de chaque année (choisissez le mois dans la bande bleue)` : 'Année entière (janvier → décembre)';
+  if (Y.length<2){ B.innerHTML = `<p class="empty">Il faut au moins deux années saisies. Pour ajouter une année, changez l'exercice avec ◀ ▶ et saisissez ses montants.</p>`; return; }
+  const nMonths = yr => [...Array(mEnd+1).keys()].filter(i=>has(i,yr)).length;
+  const sumP = (r, yr) => { let t=0; for(let i=0;i<=mEnd;i++) t += r ? val(r,i,yr) : monthTotal(i,yr); return t; };
+  const evo = (a,b) => b ? (a-b)/b : null;
+  const cellAmt = (v, prev, f, colorize=true) => { const d = prev!=null ? evo(v,prev) : null;
+    return `<td>${v ? f(v) : '<span style="color:var(--muted)">–</span>'}${d!=null&&v?`<span class="d ${colorize?cls(d):''}" style="display:block;font-size:11px">${d>0.0005?'▲':d<-0.0005?'▼':'='} ${signP(d)}</span>`:''}</td>`; };
+  const first=Y[0], last=Y[Y.length-1];
+  let h = `<div class="myrtiles">` + Y.map((y,i)=>{ const v=sumP(null,y), p=i>0?sumP(null,Y[i-1]):null, d=p?evo(v,p):null;
+      return `<div class="myrt ${y===last?'cur':''}"><div class="l">Total des achats ${y}</div><div class="v">${v?fmt.format(v):'–'}</div>
+        <div class="n">${d!=null&&v?`<span class="${cls(d)}">${d>0.0005?'▲ +':d<-0.0005?'▼ −':'= '}${fmt.format(Math.abs(v-p))} (${signP(d)})</span> vs ${Y[i-1]}`:`${nMonths(y)} mois saisis`}</div></div>`; }).join('') + `</div>`;
+  h += `<div class="scroll"><table class="mx myr"><thead><tr><th>Famille</th>${Y.map(y=>`<th>${y}<div style="font-weight:400;text-transform:none;color:var(--muted)">${nMonths(y)} mois</div></th>`).join('')}<th class="bl">${first} → ${last}</th></tr></thead><tbody>`;
+  const line = (label, get, f, style='', colorize=true) => { let prev=null, cells='';
+    Y.forEach(y=>{ const v=get(y); cells += cellAmt(v, prev, f, colorize); prev = v||null; });
+    const a=get(first), b=get(last), d = a&&b ? evo(b,a) : null;
+    return `<tr${style}><td>${label}</td>${cells}<td class="bl ${d!=null&&colorize?cls(d):''}">${d!=null?signP(d):'–'}</td></tr>`; };
+  entries().forEach(e => { h += line(nameCell(e), y=>sumP(e.o,y), x=>fmt.format(x), e.lvl?' style="font-size:13px"':(e.o.subs?' class="tot"':'')); });
+  h += line('<b>Total</b>', y=>sumP(null,y), x=>'<b>'+fmt.format(x)+'</b>', ' class="tot"');
+  const anyMeals = Y.some(y=>costCum(mEnd,y,'all'));
+  if (anyMeals){
+    const mealsP = y => { let n=0; for(let i=0;i<=mEnd;i++) n += meals(i,y)||0; return n; };
+    h += `<tr><td colspan="${Y.length+2}" style="padding-top:14px;font-weight:600;color:var(--ink2);font-size:12px;text-transform:uppercase;letter-spacing:.04em">Par repas</td></tr>`;
+    h += line('Nombre de repas', mealsP, x=>fmtInt.format(x), '', false);
+    if (hasExcl()) h += line(`Prix de revient hors boissons, hors ${esc(exclNames())}`, y=>{ const c=costCum(mEnd,y,'core'); return c?c.v:null; }, x=>fmt2.format(x));
+    h += line('Coût / repas sans boissons', y=>{ const c=costCum(mEnd,y,false); return c?c.v:null; }, x=>fmt2.format(x));
+    h += line('Coût / repas avec boissons', y=>{ const c=costCum(mEnd,y,true); return c?c.v:null; }, x=>fmt2.format(x));
+    h += line('Prix de revient total', y=>{ const c=costCum(mEnd,y,'all'); return c?c.v:null; }, x=>fmt2.format(x));
+  }
+  h += `</tbody></table></div>`;
+  const uneven = new Set(Y.map(nMonths)).size>1;
+  h += `<p class="hint">${uneven?'⚠ Les années n\'ont pas le même nombre de mois saisis (voir sous chaque année) : comparez de préférence avec « Même période ». ':''}Les prix par repas ne s'affichent que pour les années où le nombre de repas est saisi.</p>`;
+  // chart
+  const E=entries(); S.myrFam = Math.min(S.myrFam ?? E.length, E.length);
+  h += `<div class="ch" style="margin-top:14px"><div class="legend" style="margin:0"><span><i class="sw" style="background:var(--s1)"></i>Montant par année (choisissez la famille à droite)</span></div>
+    <select id="myrFam" class="sel" aria-label="Famille du graphique">${E.map((e,i)=>`<option value="${i}" ${i===S.myrFam?'selected':''}>${e.lvl?'\u00a0\u00a0\u00a0\u00a0':''}${esc(e.o.name)||'Sans nom'}</option>`).join('')}<option value="${E.length}" ${S.myrFam===E.length?'selected':''}>Total</option></select></div><div id="myrChart"></div>`;
+  B.innerHTML = h;
+  $('myrFam').onchange = e => { S.myrFam=+e.target.value; save(); drawMultiChart(Y, sumP); };
+  drawMultiChart(Y, sumP);
+}
+function drawMultiChart(Y, sumP){
+  const el=$('myrChart'), E=entries(), r = S.myrFam<E.length ? E[S.myrFam].o : null, name = r ? (r.name||'Sans nom') : 'Total';
+  const vals = Y.map(y=>sumP(r,y)); if (!vals.some(v=>v)){ el.innerHTML='<p class="empty">Aucun montant pour cette famille.</p>'; return; }
+  const W=Math.max(320, el.clientWidth||900), H=230, L=56, R=10, Tp=26, Bt=26, max=niceMax(Math.max(...vals)), pw=W-L-R, ph=H-Tp-Bt, bw=pw/Y.length, barW=Math.min(70,bw*0.5), y=v=>Tp+ph-v/max*ph;
+  let s=`<svg width="100%" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(name)} par année">`;
+  for (let i=0;i<=4;i++){ const v=max*i/4, yy=y(v); s+=`<line x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}" stroke="var(${i?'--grid':'--axis'})"/><text x="${L-8}" y="${yy+4}" text-anchor="end" font-size="11" fill="var(--muted)">${axisFmt(v)}</text>`; }
+  vals.forEach((v,i)=>{ const cx=L+bw*i+bw/2, x=cx-barW/2, last=i===vals.length-1;
+    if (v>0) s+=`<path d="${barPath(x,y(0),y(v),barW)}" fill="var(${last?'--s1':'--prev'})"/>`;
+    const p=i>0?vals[i-1]:null, d=p?(v-p)/p:null;
+    if (v>0) s+=`<text x="${cx}" y="${y(v)-8}" text-anchor="middle" font-size="11.5" font-weight="600" fill="var(--ink)">${axisFmt(Math.round(v))}${d!=null?` <tspan fill="var(${d>0.0005?'--critical':d<-0.0005?'--good':'--ink2'})">${d>0.0005?'▲':'▼'}${Math.abs(Math.round(d*100))}%</tspan>`:''}</text>`;
+    s+=`<text x="${cx}" y="${H-8}" text-anchor="middle" font-size="12" font-weight="${last?600:400}" fill="var(${last?'--ink':'--muted'})">${Y[i]}</text>`; });
+  el.innerHTML = s+'</svg>';
+}
+document.querySelectorAll('#myrSeg button').forEach(b=>b.onclick=()=>{ S.myrP=b.dataset.p; save(); drawMulti(); });
+
 /* ---------- one family ---------- */
 function drawFamSel(){
   const sel=$('famSel'), E=entries(); const cur = Math.min(S.fam||0, Math.max(0,E.length-1));
@@ -930,7 +1008,7 @@ $('stkYes').onclick=()=>{ if(!stkCtx) return; const {m,yr,after}=stkCtx; const d
   save(); closeStock(); renderAll(); if (after) after(); toast(`Stock de fin ${ML(m,yr)} enregistré`); };
 
 /* ---------- orchestration ---------- */
-function refreshViews(fromGrid){ drawHeader(); drawKpis(); drawRepas(); drawStock(); drawAnalysis(); drawChartMonths(); drawChartFam(); drawAlerts(); drawMatrix(); drawFamSel(); drawChartOne(); if (fromGrid) updateGridCalcs(); }
+function refreshViews(fromGrid){ drawHeader(); drawKpis(); drawRepas(); drawStock(); drawAnalysis(); drawChartMonths(); drawChartFam(); drawAlerts(); drawMatrix(); drawMulti(); drawFamSel(); drawChartOne(); if (fromGrid) updateGridCalcs(); }
 function renderAll(){ $('org').value=S.org||''; refreshViews(); drawGrid(); drawQuick(); }
 
 function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2200); }
@@ -960,7 +1038,7 @@ $('copy').onclick=async()=>{
     lines.push(['Coût / repas avec boissons',...MONTHS.map((_,i)=>{ const c=costMeal(i,S.year,true); return c!=null?c.toFixed(2).replace('.',','):''; })].join('\t')); }
   try{ await navigator.clipboard.writeText(lines.join('\n')); toast('Tableau copié : collez-le dans Excel'); }catch(e){ toast('Copie refusée par le navigateur'); }
 };
-let rz; addEventListener('resize',()=>{ clearTimeout(rz); rz=setTimeout(()=>{ drawChartMonths(); drawChartFam(); drawChartOne(); },150); });
+let rz; addEventListener('resize',()=>{ clearTimeout(rz); rz=setTimeout(()=>{ drawChartMonths(); drawChartFam(); drawChartOne(); drawMulti(); },150); });
 
 $('ver').textContent = 'v' + APP_VERSION;
 $('ver').title = `Version ${APP_VERSION} du ${APP_DATE} — ${APP_NOTES}`;
