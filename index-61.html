@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Suivi mensuel des dépenses par famille</title>
+<style>
+  :root{
+    color-scheme: light;
+    --page:#f9f9f7; --surface:#fcfcfb; --card:#ffffff;
+    --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+    --grid:#e1e0d9; --axis:#c3c2b7; --ring:rgba(11,11,11,.10);
+    --s1:#2a78d6; --prev:#c3c2b7;
+    --good:#006300; --critical:#d03b3b;
+    --head:#0f2540; --head-ink:#ffffff; --head-ink2:#b9c6d6;
+    --soft:#f3f2ee; --hl:#eef4fc;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      color-scheme: dark;
+      --page:#0d0d0d; --surface:#1a1a19; --card:#1a1a19;
+      --ink:#f0efec; --ink2:#c3c2b7; --muted:#898781;
+      --grid:#2c2c2a; --axis:#383835; --ring:rgba(255,255,255,.10);
+      --s1:#3987e5; --prev:#5a5955;
+      --good:#0ca30c; --critical:#e66767;
+      --head:#111c2b; --head-ink:#f0efec; --head-ink2:#93a3b8;
+      --soft:#232321; --hl:#16263a;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--page);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+  header{background:var(--head);color:var(--head-ink);padding:20px 0 18px}
+  .wrap{max-width:1200px;margin:0 auto;padding:0 20px}
+  .hrow{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between}
+  .org{background:transparent;border:none;color:var(--head-ink2);font:inherit;font-size:13px;letter-spacing:.06em;text-transform:uppercase;padding:2px 0;width:340px;max-width:100%}
+  .org:focus{outline:1px dashed var(--head-ink2)}
+  h1{margin:2px 0 0;font-size:22px;font-weight:600;letter-spacing:-.01em}
+  .yearbox{display:flex;align-items:center;gap:6px;color:var(--head-ink2);font-size:13px}
+  .yearbox b{color:var(--head-ink);font-size:18px;min-width:52px;text-align:center}
+  .yearbox button{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);color:var(--head-ink);border-radius:6px;width:30px;height:30px;cursor:pointer;font-size:14px}
+  .yearbox button:hover{background:rgba(255,255,255,.16)}
+  .months{display:flex;flex-wrap:wrap;gap:4px;margin-top:16px}
+  .months button{background:transparent;border:1px solid rgba(255,255,255,.18);color:var(--head-ink2);border-radius:6px;padding:5px 10px;font:inherit;font-size:13px;cursor:pointer}
+  .months button.has{color:var(--head-ink)}
+  .months button.on{background:var(--head-ink);color:var(--head);border-color:var(--head-ink);font-weight:600}
+  .months button:hover:not(.on){background:rgba(255,255,255,.08)}
+  main{padding:20px 0 60px}
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px}
+  .kpi{background:var(--card);border:1px solid var(--ring);border-radius:10px;padding:14px 16px}
+  .kpi.hl{border-color:var(--s1);box-shadow:inset 0 3px 0 var(--s1)}
+  .kpi .l{font-size:11.5px;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em}
+  .kpi .v{font-size:23px;font-weight:600;margin-top:6px;white-space:nowrap}
+  .kpi .n{font-size:12.5px;color:var(--ink2);margin-top:2px}
+  .card{background:var(--card);border:1px solid var(--ring);border-radius:10px;padding:16px 18px;margin-bottom:16px}
+  .card h2{font-size:15px;font-weight:600;margin:0}
+  .card .sub{font-size:13px;color:var(--ink2);margin:2px 0 12px}
+  .ch{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:10px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+  .two .card{margin-bottom:0}
+  table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+  th,td{padding:7px 8px;text-align:right;border-bottom:1px solid var(--grid);white-space:nowrap}
+  th{font-size:11px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.04em;background:var(--surface)}
+  th:first-child,td:first-child{text-align:left}
+  th.grp{text-align:center;border-bottom:none;padding-bottom:0;color:var(--ink)}
+  td.bl,th.bl{border-left:1px solid var(--grid)}
+  tr.tot td{border-top:1.5px solid var(--axis);background:var(--surface)}
+  th.pc,td.pc{padding-left:4px;padding-right:6px;font-size:12.5px;width:1%}
+  .mx td{padding-left:5px;padding-right:5px}
+  .mx td .d{white-space:nowrap}
+  .qf{border-color:var(--s1)}
+  .qper{display:flex;gap:12px;align-items:center;font-size:13px;color:var(--ink2)}
+  .qper label{display:flex;gap:6px;align-items:center}
+  .qgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 14px}
+  .qbreak{grid-column:1/-1;height:0;margin:-4px 0;border-top:1px dashed var(--grid)}
+  @media (max-width:700px){ .qgrid{grid-template-columns:repeat(2,1fr)} }
+  .qfield{display:flex;flex-direction:column;gap:4px}
+  .qfield span{font-size:12px;color:var(--ink2);font-weight:500;line-height:16px}
+  .qfield.sub span{padding-left:10px}
+  .qfield.sub span::before{content:"dont ";color:var(--muted)}
+  .qfield .in{position:relative}
+  .qfield input{width:100%;font:inherit;font-size:16px;font-variant-numeric:tabular-nums;text-align:right;padding:9px 30px 9px 10px;border:1px solid var(--axis);border-radius:8px;background:var(--card);color:var(--ink)}
+  .qfield input:focus{outline:none;border-color:var(--s1);box-shadow:0 0 0 3px var(--hl)}
+  .qfield .in.nr::after{content:"repas"}
+  .qfield .in.nr input{padding-right:58px}
+  .qfield .in::after{content:"€";position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--muted)}
+  .qfield.calc input{background:var(--surface);color:var(--ink2);border-style:dashed}
+  .qfoot{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-top:14px;padding-top:12px;border-top:1px solid var(--grid)}
+  .qsum{font-size:13px;color:var(--ink2)} .qsum b{color:var(--ink);font-size:15px}
+  .hbtn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);color:var(--head-ink);border-radius:7px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
+  .hbtn:hover{background:rgba(255,255,255,.16)}
+  .modal .box.wide{max-width:720px;width:calc(100% - 32px);max-height:calc(100vh - 40px);overflow:auto;padding:22px}
+  .tpl{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0 6px}
+  .tpl button{text-align:left;font:inherit;background:var(--card);border:1px solid var(--ring);border-radius:10px;padding:12px;cursor:pointer;color:var(--ink)}
+  .tpl button:hover{border-color:var(--s1);background:var(--hl)}
+  .tpl b{display:block;margin-bottom:4px} .tpl small{color:var(--ink2);font-size:12px;line-height:1.4;display:block}
+  .fl{margin:16px 0 0;border:1px solid var(--grid);border-radius:10px;overflow:hidden}
+  .fr{display:flex;align-items:center;gap:6px;padding:8px 10px;border-top:1px solid var(--grid);background:var(--card)}
+  .fr:first-child{border-top:none}
+  .fr.sub{padding-left:34px;background:var(--surface)}
+  .fr.calc{padding-left:34px;background:var(--surface);color:var(--ink2);font-size:13px}
+  .fr input{flex:1;min-width:0;font:inherit;border:1px solid var(--axis);border-radius:6px;padding:7px 9px;background:var(--card);color:var(--ink)}
+  .fr input:focus{outline:none;border-color:var(--s1)}
+  .fr .ib{border:1px solid transparent;background:none;color:var(--ink2);cursor:pointer;border-radius:6px;padding:5px 8px;font:inherit;font-size:13px;white-space:nowrap}
+  .fr .ib:hover{background:var(--soft);border-color:var(--ring)}
+  .fr .ib.x:hover{color:var(--critical)}
+  .fr .ib:disabled{opacity:.3;cursor:default;background:none;border-color:transparent}
+  .orgf{display:flex;gap:10px;align-items:center;margin-top:16px;font-size:13px;color:var(--ink2)}
+  .orgf input{flex:1;font:inherit;border:1px solid var(--axis);border-radius:6px;padding:7px 9px;background:var(--card);color:var(--ink)}
+  .emptyp{padding:28px;text-align:center;color:var(--ink2)}
+  @media (max-width:640px){ .tpl{grid-template-columns:1fr} }
+  .rptiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
+  .rpt{border:1px solid var(--grid);border-radius:10px;padding:12px 14px;background:var(--surface)}
+  .rpt .l{font-size:12px;color:var(--ink2)} .rpt .v{font-size:24px;font-weight:600;margin-top:4px} .rpt .n{font-size:12.5px;color:var(--ink2);margin-top:2px}
+  .rpt.main{border-color:var(--s1);background:var(--hl)}
+  @media (max-width:800px){ .rptiles{grid-template-columns:1fr} }
+  tfoot td{font-weight:600;border-top:1.5px solid var(--axis);border-bottom:none}
+  .up{color:var(--critical)} .down{color:var(--good)}
+  .scroll{overflow-x:auto}
+  .grid input{width:84px;font:inherit;font-variant-numeric:tabular-nums;text-align:right;background:transparent;border:1px solid transparent;border-radius:4px;padding:5px 6px;color:var(--ink)}
+  .grid input.fam{width:190px;text-align:left;font-weight:500}
+  .grid input:hover{background:var(--soft)}
+  .grid input:focus{outline:none;border-color:var(--s1);background:var(--card)}
+  .grid td{padding:2px 3px}
+  .grid td.calc{padding:7px 8px;color:var(--ink2)}
+  .grid th.sel,.grid td.sel,.mx th.sel,.mx td.sel{background:var(--hl)}
+  .grid .del{border:none;background:none;color:var(--muted);cursor:pointer;font-size:16px;padding:2px 6px}
+  .grid .del:hover{color:var(--critical)}
+  .btns{display:flex;flex-wrap:wrap;gap:8px}
+  button.b{font:inherit;font-size:13px;cursor:pointer;border-radius:7px;border:1px solid var(--ring);background:var(--card);color:var(--ink);padding:6px 12px}
+  button.b:hover{background:var(--soft)}
+  button.b.p{background:var(--s1);border-color:var(--s1);color:#fff}
+  .seg{display:inline-flex;border:1px solid var(--ring);border-radius:7px;overflow:hidden}
+  .seg button{font:inherit;font-size:13px;border:none;background:var(--card);color:var(--ink2);padding:6px 12px;cursor:pointer}
+  .seg button.on{background:var(--s1);color:#fff}
+  .hint{font-size:12px;color:var(--muted);margin-top:10px}
+  .legend{display:flex;flex-wrap:wrap;gap:16px;font-size:12px;color:var(--ink2);margin-bottom:6px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .sw{width:10px;height:10px;border-radius:2px;display:inline-block}
+  .ln{width:14px;height:0;border-top:2px dashed var(--ink2);display:inline-block}
+  svg text{font-family:inherit}
+  .tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--page);font-size:12px;padding:7px 9px;border-radius:6px;opacity:0;transition:opacity .1s;z-index:10;line-height:1.5;font-variant-numeric:tabular-nums}
+  .alerts{margin:0;padding:0;list-style:none}
+  .alerts li{padding:8px 0;border-bottom:1px solid var(--grid);display:flex;gap:10px;align-items:baseline;font-size:13.5px}
+  .alerts li:last-child{border-bottom:none}
+  .alerts .ic{font-weight:700;width:16px;text-align:center;flex:none}
+  .pill{font-size:11px;color:var(--ink2);border:1px solid var(--grid);border-radius:999px;padding:0 6px;margin-left:4px;white-space:nowrap}
+  .empty{color:var(--muted);font-size:13px}
+  .mx td{vertical-align:top}
+  .mx td .a{display:block;color:var(--ink)}
+  .mx td .d{display:block;font-size:11px;margin-top:1px}
+  select.sel{font:inherit;font-size:13px;border-radius:7px;border:1px solid var(--ring);background:var(--card);color:var(--ink);padding:6px 10px}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--page);padding:9px 16px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:30}
+  .toast.show{opacity:1}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:20}
+  .modal.show{display:flex}
+  .modal .box{background:var(--card);border-radius:10px;padding:20px;max-width:380px;border:1px solid var(--ring)}
+  .modal p{margin:0 0 16px}
+  @media (max-width:1000px){ .kpis{grid-template-columns:repeat(2,1fr)} .two{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="hrow">
+      <div>
+        <input class="org" id="org" aria-label="Société ou service" placeholder="Nom de l'établissement">
+        <h1>Suivi mensuel des dépenses par famille</h1>
+      </div>
+      <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+      <button class="hbtn" id="openSetup">⚙ Mes familles</button>
+      <div class="yearbox">Exercice
+        <button id="yPrev" aria-label="Année précédente">◀</button><b id="yLbl"></b><button id="yNext" aria-label="Année suivante">▶</button>
+      </div></div>
+    </div>
+    <div class="months" id="months" role="tablist" aria-label="Mois analysé"></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="card qf">
+    <div class="ch">
+      <div><h2>Saisie du mois</h2><p class="sub">Recopiez les montants du Récapitulatif de votre logiciel, puis enregistrez.</p></div>
+      <div class="qper"><label>Mois <select id="qM" class="sel"></select></label><label>Année <select id="qY" class="sel"></select></label></div>
+    </div>
+    <form id="qForm" autocomplete="off">
+      <div class="qgrid" id="qFields"></div>
+      <div class="qfoot">
+        <div class="qsum" id="qSum"></div>
+        <div class="btns"><button type="button" class="b" id="qReset">Effacer</button><button type="submit" class="b p" id="qSave">Enregistrer</button></div>
+      </div>
+    </form>
+  </section>
+
+  <section class="kpis">
+    <div class="kpi"><div class="l" id="kM">Dépenses du mois</div><div class="v" id="vM">–</div><div class="n" id="nM"></div></div>
+    <div class="kpi hl"><div class="l" id="kY">Vs même mois N-1</div><div class="v" id="vY">–</div><div class="n" id="nY"></div></div>
+    <div class="kpi"><div class="l">Vs mois précédent</div><div class="v" id="vP">–</div><div class="n" id="nP"></div></div>
+    <div class="kpi"><div class="l">Vs moyenne mensuelle</div><div class="v" id="vA">–</div><div class="n" id="nA"></div></div>
+    <div class="kpi"><div class="l">Cumul de l'exercice</div><div class="v" id="vC">–</div><div class="n" id="nC"></div></div>
+  </section>
+
+  <section class="card" id="repasCard">
+    <div class="ch">
+      <div><h2 id="rpTitle">Coût par repas</h2><p class="sub" id="rpSub"></p></div>
+    </div>
+    <div id="rpBody"></div>
+  </section>
+
+  <section class="card">
+    <h2 id="tTitle">Analyse par famille</h2>
+    <p class="sub">Le mois analysé comparé au même mois de l'année précédente, au mois précédent et à la moyenne des mois antérieurs de l'exercice</p>
+    <div class="scroll"><table id="analysis"></table></div>
+  </section>
+
+  <section class="card">
+    <div class="ch">
+      <div><h2>Évolution mensuelle du total — <span id="yrsLbl"></span></h2><p class="sub">Total toutes familles, chaque mois comparé au même mois de l'année précédente. Cliquez sur un mois pour l'analyser.</p></div>
+      <div class="legend"><span><i class="sw" style="background:var(--s1)"></i><span class="lgN"></span></span><span><i class="sw" style="background:var(--prev)"></i><span class="lgN1"></span></span></div>
+    </div>
+    <div id="chartMonths"></div>
+  </section>
+
+  <div class="two">
+    <section class="card">
+      <h2>Répartition du mois</h2>
+      <p class="sub">Montant par famille, comparé au même mois de l'année précédente</p>
+      <div class="legend"><span><i class="sw" style="background:var(--s1)"></i><span id="lgM"></span></span><span><i class="sw" style="background:var(--prev)"></i><span id="lgM1"></span></span></div>
+      <div id="chartFam"></div>
+    </section>
+    <section class="card">
+      <h2>Points d'attention</h2>
+      <p class="sub">Écarts de plus de <b>20 %</b> (et d'au moins 50 €) par rapport à l'année précédente ou à la moyenne</p>
+      <ul class="alerts" id="alerts"></ul>
+    </section>
+  </div>
+
+  <section class="card">
+    <div class="ch">
+      <div><h2>Comparaison par famille, mois par mois — <span class="lgN"></span></h2><p class="sub" id="mxSub"></p></div>
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <span style="font-size:13px;color:var(--ink2)">Comparer à :</span>
+        <div class="seg" id="cmpSeg"><button data-c="yoy">Même mois N-1</button><button data-c="prev">Mois précédent</button></div>
+      </div>
+    </div>
+    <div class="scroll"><table class="mx" id="matrix"></table></div>
+  </section>
+
+  <section class="card">
+    <div class="ch">
+      <div><h2>Évolution d'une famille</h2><p class="sub">Montant mensuel de la famille choisie, comparé à l'année précédente (variation affichée au-dessus des barres)</p></div>
+      <select id="famSel" class="sel" aria-label="Famille"></select>
+    </div>
+    <div class="legend"><span><i class="sw" style="background:var(--s1)"></i><span class="lgN"></span></span><span><i class="sw" style="background:var(--prev)"></i><span class="lgN1"></span></span></div>
+    <div id="chartOne"></div>
+  </section>
+
+  <section class="card">
+    <div class="ch">
+      <div><h2>Saisie des montants <span id="gYear"></span> (€)</h2><p class="sub">Une ligne par famille, une colonne par mois. Pour saisir une autre année, changez l'exercice en haut à droite (◀ ▶).</p></div>
+      <div class="btns">
+        <button class="b" id="openSetup2">⚙ Paramétrer les familles</button>
+        <button class="b" id="copy">Copier pour Excel</button>
+        <button class="b" id="example">Charger l'exemple</button>
+        <button class="b" id="clear">Vider l'année</button>
+      </div>
+    </div>
+    <div class="scroll"><table class="grid" id="grid"></table></div>
+    <p class="hint">Astuce : copiez un bloc de cellules depuis Excel et collez-le dans une case : il est réparti automatiquement à partir de cette case. Pour l'alimentaire : saisissez « Total alimentaire » tel qu'affiché dans votre logiciel et le montant « Nutrisens » ; la ligne « Alimentaire » (total − Nutrisens) se calcule automatiquement. Les familles sont communes à toutes les années. Les données restent enregistrées dans ce navigateur.</p>
+  </section>
+</main>
+
+<div class="tip" id="tip"></div>
+<div class="toast" id="toast"></div>
+<div class="modal" id="setup" style="z-index:15"><div class="box wide" role="dialog" aria-labelledby="setupT">
+  <div class="ch" style="flex-wrap:nowrap"><div><h2 id="setupT" style="margin:0;font-size:18px">Mes familles de dépenses</h2>
+  <p class="sub" style="margin:4px 0 0">Créez les familles que vous suivez, dans l'ordre de votre choix. Une famille peut contenir des sous-familles (« dont … »).</p></div>
+  <button class="b" id="setupClose" aria-label="Fermer">✕</button></div>
+  <div id="setupBody"></div>
+</div></div>
+<div class="modal" id="modal"><div class="box"><p id="mText"></p><div class="btns" style="justify-content:flex-end"><button class="b" id="mNo">Annuler</button><button class="b p" id="mYes">Confirmer</button></div></div></div>
+
+<script>
+const MONTHS = ['Janv.','Févr.','Mars','Avr.','Mai','Juin','Juil.','Août','Sept.','Oct.','Nov.','Déc.'];
+const MONTHS_L = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+const KEY = 'suivi-depenses-familles-v8';
+const THR = 0.20, MIN_ABS = 50;
+const EMPTY = Array(12).fill(null);
+
+function exampleState(){
+  let seed = 11; const rnd = () => (seed = (seed*16807) % 2147483647) / 2147483647;
+  const gen = (name, base, yr) => MONTHS.map((_, m) => {
+    if (yr===2026 && m > 9) return null;
+    let k = (yr===2025 ? 0.95 : 1) * (0.92 + rnd()*0.16);
+    if ((m===5||m===6) && name==='Boissons') k *= 1.3;           // été
+    if (name==='Produits d\'entretien' && m===8) k *= 1.6;       // nettoyage de rentrée
+    if (yr===2026 && name==='Boissons' && m===9) k = 1.4;
+    if (yr===2026 && name==='Nutrisens') k *= 1.25;    // hausse du médical
+    return Math.round(base*k);
+  });
+  const leaf = (name, base) => ({ name, y:{2025:gen(name,base,2025), 2026:gen(name,base,2026)} });
+  const days=[31,28,31,30,31,30,31,31,30,31,30,31];
+  const meals = yr => days.map((d,m)=> yr===2026 && m>9 ? null : (yr===2026&&m===9 ? 6916 : yr===2025&&m===9 ? 6785 : Math.round(d*(yr===2025?218:222)*(0.98+rnd()*0.04))));
+  return { org:'Mon établissement', year:2026, sel:9, fam:0, cmp:'yoy', meals:{2025:meals(2025), 2026:meals(2026)}, rows:[
+    (()=>{ const n=leaf('Nutrisens',1800), o=leaf('Autres',17700);
+       return { name:'Total alimentaire', rest:'Alimentaire', role:'repas', y:{2025:n.y[2025].map((v,i)=>v==null?null:v+o.y[2025][i]), 2026:n.y[2026].map((v,i)=>v==null?null:v+o.y[2026][i])}, subs:[n] }; })(),
+    {...leaf('Boissons',1450), role:'boissons'}, leaf('Consommable',120), leaf('Produits d\'entretien',90), {...leaf('Boulanger',640), role:'repas'}
+  ]};
+}
+
+const TEMPLATES = {
+  resto: { label:'Restauration collective', desc:'Total alimentaire (dont Nutrisens), Boissons, Consommable, Produits d\'entretien, Boulanger',
+    rows:()=>[ {name:'Total alimentaire', rest:'Alimentaire', role:'repas', y:{}, subs:[{name:'Nutrisens', y:{}}]}, {name:'Boissons', role:'boissons', y:{}}, {name:'Consommable', y:{}}, {name:'Produits d\'entretien', y:{}}, {name:'Boulanger', role:'repas', y:{}} ] },
+  generic: { label:'Frais généraux', desc:'Achats, Fournitures, Entretien & maintenance, Énergie, Prestations extérieures',
+    rows:()=>['Achats','Fournitures','Entretien & maintenance','Énergie','Prestations extérieures'].map(n=>({name:n, y:{}})) },
+  empty: { label:'Partir de zéro', desc:'Une seule famille vide : vous créez les vôtres', rows:()=>[{name:'', y:{}}] }
+};
+function freshState(tpl){ const now=new Date(); let m=now.getMonth()-1, y=now.getFullYear(); if (m<0){ m=11; y--; }
+  return { org:'', year:y, sel:m, fam:0, cmp:'yoy', rows: TEMPLATES[tpl].rows() }; }
+let S, firstRun=false;
+try { S = JSON.parse(localStorage.getItem(KEY)); } catch(e) {}
+if (!S || !Array.isArray(S.rows)) { S = freshState('resto'); S.rows=[]; firstRun = true; }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S, (k,v)=>k==='_v'?undefined:v)); } catch(e) {} };
+
+const $ = id => document.getElementById(id);
+const fmt = new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0});
+const fmtN = new Intl.NumberFormat('fr-FR',{maximumFractionDigits:2});
+const signE = v => (v>0?'+':v<0?'−':'') + fmt.format(Math.abs(v));
+const signP = v => v==null||!isFinite(v) ? '–' : (Math.round(v*100)>0?'+':Math.round(v*100)<0?'−':'') + Math.abs(Math.round(v*100)) + '\u202f%';
+const cls = v => v>0.0001?'up':v<-0.0001?'down':'';
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const parse = s => { if (s==null) return null; s=String(s).replace(/[\s €]/g,''); if(s==='') return null;
+  if (s.includes(',') && s.includes('.')) s = s.replace(/\./g,''); s=s.replace(',','.'); const n=parseFloat(s); return isFinite(n)?n:null; };
+
+/* ---------- data model: families (optionally with sub-families); leaves hold y[year] = 12 values ---------- */
+const lv = (o, yr) => (o.y && o.y[yr]) || EMPTY;
+const setv = (o, yr, m, v) => { o.y ||= {}; o.y[yr] ||= Array(12).fill(null); o.y[yr][m] = v; };
+/* A family with sub-families: its own value is the TOTAL (entered as read in the software);
+   sub-families are entered; "Autres …" = total − sub-families (computed, virtual row). */
+const sumSubs = (r, m, yr) => r.subs.reduce((s,x)=>s+(lv(x,yr)[m]??0),0);
+const val = (r, m, yr=S.year) => {
+  if (r.virt) return val(r.parent,m,yr) - sumSubs(r.parent,m,yr);
+  const own = lv(r,yr)[m];
+  if (r.subs) return own ?? sumSubs(r,m,yr);
+  return own ?? 0;
+};
+const virtOf = r => (r._v ||= Object.defineProperty({virt:true}, 'parent', {value:r, enumerable:false})) && Object.assign(r._v, {name: r.rest || ('Autres ' + (r.name||'').toLowerCase())});
+const leaves = () => S.rows.flatMap((r,ri) => [...(r.subs||[]).map((x,si)=>({o:x, ri, si})), {o:r, ri, si:null}]);
+const has = (m, yr=S.year) => leaves().some(l => { const v=lv(l.o,yr)[m]; return v!=null && v!==0; });
+const hasYear = yr => MONTHS.some((_,i)=>has(i,yr));
+const entries = () => S.rows.flatMap((r,ri) => [...(r.subs?[{o:virtOf(r), lvl:1, key:ri+'.v'}]:[]), ...(r.subs||[]).map((x,si)=>({o:x, lvl:1, key:ri+'.'+si})), {o:r, lvl:0, key:String(ri)}]);
+const yearTot = (r, yr=S.year) => MONTHS.reduce((s,_,i)=>s+val(r,i,yr),0);
+const monthTotal = (m, yr=S.year) => S.rows.reduce((s,r)=>s+val(r,m,yr),0);
+const prevOf = (m, yr=S.year) => m>0 ? [m-1, yr] : [11, yr-1];          // janvier → décembre N-1
+const prevMonths = m => [...Array(m).keys()].filter(i=>has(i));
+const avgBefore = (r, m) => { const ms = prevMonths(m); return ms.length ? ms.reduce((s,i)=>s+val(r,i),0)/ms.length : null; };
+const avgTotalBefore = m => { const ms = prevMonths(m); return ms.length ? ms.reduce((s,i)=>s+monthTotal(i),0)/ms.length : null; };
+const nameCell = e => e.lvl ? `<span style="color:var(--ink2);padding-left:14px">${esc(e.o.name)||'<i>Sans nom</i>'}</span>` : (e.o.subs ? `<b>${esc(e.o.name)||'Sans nom'}</b>` : (esc(e.o.name)||'<i>Sans nom</i>'));
+const ML = (m, yr) => `${MONTHS_L[m]} ${yr}`;
+const MS = (m, yr) => `${MONTHS[m]} ${String(yr).slice(2)}`;
+
+/* ---------- meals & cost per meal ---------- */
+const meals = (m, yr=S.year) => (S.meals && S.meals[yr] && S.meals[yr][m]) || null;
+const setMeals = (m, yr, v) => { S.meals ||= {}; S.meals[yr] ||= Array(12).fill(null); S.meals[yr][m] = v; };
+const roleSum = (role, m, yr=S.year) => S.rows.filter(r=>r.role===role).reduce((s,r)=>s+val(r,m,yr),0);
+const hasRoles = () => S.rows.some(r=>r.role==='repas');
+const costMeal = (m, yr=S.year, drinks=false) => { const n=meals(m,yr); if (!n || !has(m,yr)) return null; return (roleSum('repas',m,yr) + (drinks?roleSum('boissons',m,yr):0)) / n; };
+const fmt2 = new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtInt = new Intl.NumberFormat('fr-FR',{maximumFractionDigits:0});
+
+/* ---------- header ---------- */
+function drawHeader(){
+  $('yLbl').textContent = S.year;
+  document.querySelectorAll('.lgN').forEach(e=>e.textContent=S.year);
+  document.querySelectorAll('.lgN1').forEach(e=>e.textContent=S.year-1);
+  $('yrsLbl').textContent = `${S.year} vs ${S.year-1}`;
+  $('months').innerHTML = MONTHS.map((n,i)=>`<button role="tab" aria-selected="${i===S.sel}" class="${i===S.sel?'on':''} ${has(i)?'has':''}" data-m="${i}">${n}</button>`).join('');
+  $('months').querySelectorAll('button').forEach(b=>b.onclick=()=>{ S.sel=+b.dataset.m; save(); renderAll(); });
+}
+
+/* ---------- KPIs ---------- */
+function drawKpis(){
+  const m=S.sel, y=S.year, T=monthTotal(m);
+  $('kM').textContent = `Dépenses — ${ML(m,y)}`;
+  $('vM').textContent = fmt.format(T);
+  const fams = S.rows.filter(r=>val(r,m)>0).length;
+  $('nM').textContent = `${fams} famille${fams>1?'s':''} mouvementée${fams>1?'s':''}`;
+  // vs N-1
+  $('kY').textContent = `Vs ${ML(m,y-1)}`;
+  if (has(m,y-1)) { const Y=monthTotal(m,y-1), d=T-Y;
+    $('vY').innerHTML = `<span class="${cls(d)}">${signE(d)}</span>`; $('nY').textContent = `${signP(Y?d/Y:null)} · ${ML(m,y-1)} : ${fmt.format(Y)}`;
+  } else { $('vY').textContent='–'; $('nY').textContent = `${ML(m,y-1)} non saisi`; }
+  // vs mois précédent
+  const [pm,py] = prevOf(m);
+  if (has(pm,py)) { const P=monthTotal(pm,py), d=T-P;
+    $('vP').innerHTML = `<span class="${cls(d)}">${signE(d)}</span>`; $('nP').textContent = `${signP(P?d/P:null)} · ${ML(pm,py)} : ${fmt.format(P)}`;
+  } else { $('vP').textContent='–'; $('nP').textContent=`${ML(pm,py)} non saisi`; }
+  // vs moyenne
+  const A = avgTotalBefore(m);
+  if (A!=null) { const d=T-A; $('vA').innerHTML=`<span class="${cls(d)}">${signE(d)}</span>`;
+    $('nA').textContent = `${signP(A?d/A:null)} · moyenne de ${prevMonths(m).length} mois : ${fmt.format(A)}`;
+  } else { $('vA').textContent='–'; $('nA').textContent='Pas de mois antérieur saisi'; }
+  // cumul
+  let C=0, C1=0; for(let i=0;i<=m;i++){ C+=monthTotal(i); C1+=monthTotal(i,y-1); }
+  $('vC').textContent = fmt.format(C);
+  $('nC').innerHTML = `Janv. → ${MONTHS[m].toLowerCase()} ${y}` + (C1 ? ` · <span class="${cls(C-C1)}">${signP((C-C1)/C1)}</span> vs ${y-1} (${fmt.format(C1)})` : '');
+}
+
+/* ---------- tooltip ---------- */
+const tip = $('tip');
+function showTip(e, html){ tip.innerHTML=html; tip.style.opacity=1; moveTip(e); }
+function moveTip(e){ const w=tip.offsetWidth; tip.style.left = Math.min(e.clientX+14, innerWidth-w-8)+'px'; tip.style.top = (e.clientY+14)+'px'; }
+function hideTip(){ tip.style.opacity=0; }
+
+/* ---------- chart helpers ---------- */
+function niceMax(v){ if(v<=0) return 1; const p=Math.pow(10,Math.floor(Math.log10(v))); const n=v/p; return (n<=1?1:n<=2?2:n<=4?4:n<=6?6:n<=8?8:10)*p; }
+function axisFmt(v){ return v>=1000 ? (v/1000).toLocaleString('fr-FR',{maximumFractionDigits:1})+' k€' : Math.round(v)+' €'; }
+const barPath = (x,y0,yt,w) => { const h=y0-yt, r=Math.min(3,h,w/2); return `M${x},${y0} V${yt+r} Q${x},${yt} ${x+r},${yt} H${x+w-r} Q${x+w},${yt} ${x+w},${yt+r} V${y0} Z`; };
+
+/* grouped bars N vs N-1 over 12 months; getN/getN1 return value or null */
+function groupedChart(el, getN, getN1, opts){
+  const W=Math.max(320, el.clientWidth||900), H=250, L=56, R=10, Tp=26, B=26;
+  const vN = MONTHS.map((_,i)=>getN(i)), v1 = MONTHS.map((_,i)=>getN1(i));
+  if (![...vN, ...v1].some(v=>v)) { el.innerHTML = `<p class="emptyp">Aucun montant saisi pour ${S.year} ni ${S.year-1}. Utilisez « Saisie du mois » en haut de page.</p>`; return; }
+  const max = niceMax(Math.max(0, ...vN.filter(v=>v!=null), ...v1.filter(v=>v!=null)));
+  const pw=W-L-R, ph=H-Tp-B, bw=pw/12, gw=Math.min(52, bw*0.74), bW=(gw-2)/2, y=v=>Tp+ph-v/max*ph;
+  let s=`<svg width="100%" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opts.aria)}">`;
+  for (let i=0;i<=4;i++){ const v=max*i/4, yy=y(v);
+    s+=`<line x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}" stroke="var(${i?'--grid':'--axis'})"/>`;
+    s+=`<text x="${L-8}" y="${yy+4}" text-anchor="end" font-size="11" fill="var(--muted)">${axisFmt(v)}</text>`; }
+  MONTHS.forEach((n,i)=>{ const cx=L+bw*i+bw/2, x0=cx-gw/2, sel=opts.sel===i;
+    if (sel) s+=`<rect x="${L+bw*i+1}" y="${Tp-22}" width="${bw-2}" height="${ph+22}" fill="var(--hl)" rx="4"/>`;
+    if (v1[i]) s+=`<path d="${barPath(x0, y(0), y(v1[i]), bW)}" fill="var(--prev)"/>`;
+    if (vN[i]) s+=`<path d="${barPath(x0+bW+2, y(0), y(vN[i]), bW)}" fill="var(--s1)"/>`;
+    if (vN[i] && v1[i]){ const d=(vN[i]-v1[i])/v1[i], top=Math.min(y(vN[i]),y(v1[i]));
+      s+=`<text x="${cx}" y="${top-6}" text-anchor="middle" font-size="10.5" font-weight="600" fill="var(${d>0.0001?'--critical':d<-0.0001?'--good':'--ink2'})">${d>0.0001?'▲':d<-0.0001?'▼':''}${Math.abs(d*100).toLocaleString('fr-FR',{maximumFractionDigits:0})} %</text>`; }
+    s+=`<text x="${cx}" y="${H-8}" text-anchor="middle" font-size="11" fill="var(${sel?'--ink':'--muted'})" font-weight="${sel?600:400}">${n}</text>`;
+    s+=`<rect x="${L+bw*i}" y="${Tp-22}" width="${bw}" height="${ph+22}" fill="transparent" data-m="${i}" style="cursor:${opts.onClick?'pointer':'default'}"/>`;
+  });
+  el.innerHTML = s+'</svg>';
+  el.querySelectorAll('rect[data-m]').forEach(rc=>{ const i=+rc.dataset.m;
+    rc.onmouseenter=e=>{ const a=vN[i], b=v1[i]; if(a==null&&b==null) return;
+      showTip(e, `<b>${opts.title?esc(opts.title)+' — ':''}${MONTHS_L[i]}</b><br>${S.year} : ${a!=null?fmt.format(a):'–'}<br>${S.year-1} : ${b!=null?fmt.format(b):'–'}${a!=null&&b?`<br>Écart : ${signE(a-b)} (${signP((a-b)/b)})`:''}`); };
+    rc.onmousemove=moveTip; rc.onmouseleave=hideTip;
+    if (opts.onClick) rc.onclick=()=>opts.onClick(i);
+  });
+}
+
+function drawChartMonths(){
+  groupedChart($('chartMonths'), i=>has(i)?monthTotal(i):null, i=>has(i,S.year-1)?monthTotal(i,S.year-1):null,
+    {aria:'Total mensuel, année en cours et année précédente', sel:S.sel, onClick:i=>{ S.sel=i; save(); renderAll(); }});
+}
+
+/* ---------- cost per meal card ---------- */
+function drawRepas(){
+  const m=S.sel, y=S.year, B=$('rpBody');
+  $('rpTitle').textContent = `Coût par repas — ${ML(m,y)}`;
+  const nm = S.rows.filter(r=>r.role==='repas').map(r=>r.name).join(' + '), nb = S.rows.filter(r=>r.role==='boissons').map(r=>r.name).join(' + ');
+  if (!hasRoles()){ $('rpSub').textContent=''; B.innerHTML = `<p class="empty">Pour calculer le coût par repas, indiquez dans <a href="#" class="goSetup">⚙ Mes familles</a> quelles familles comptent comme « repas » et « boissons », puis saisissez le nombre de repas chaque mois.</p>`;
+    B.querySelector('.goSetup').onclick=e=>{ e.preventDefault(); openSetup(); }; return; }
+  $('rpSub').textContent = `Sans boissons = (${nm}) ÷ nombre de repas${nb?` · Avec boissons = on ajoute ${nb}`:''}`;
+  const tile = (label, v, v1, isInt, main) => {
+    const f = isInt ? (x=>fmtInt.format(x)) : (x=>fmt2.format(x));
+    const d = v!=null && v1 ? (v-v1)/v1 : null;
+    return `<div class="rpt ${main?'main':''}"><div class="l">${label}</div><div class="v">${v!=null?f(v):'–'}</div>
+      <div class="n">${v1!=null?`${ML(m,y-1)} : ${f(v1)}${d!=null?` · <span class="${isInt?'':cls(d)}">${signP(d)}</span>`:''}`:`${ML(m,y-1)} non saisi`}</div></div>`; };
+  let h = `<div class="rptiles">
+    ${tile('Coût par repas sans boissons', costMeal(m), costMeal(m,y-1), false, true)}
+    ${tile('Coût par repas avec boissons', costMeal(m,y,true), costMeal(m,y-1,true), false)}
+    ${tile('Nombre de repas', meals(m), meals(m,y-1), true)}
+  </div>`;
+  if (!meals(m)) h += `<p class="hint" style="margin:-4px 0 12px">Nombre de repas de ${ML(m,y)} non saisi : ajoutez-le dans « Saisie du mois ».</p>`;
+  const cell = (v, v1, i, f, colorize) => { if (v==null) return `<td class="${i===m?'sel':''}"><span class="a" style="color:var(--muted)">–</span></td>`;
+    const d = v1 ? (v-v1)/v1 : null;
+    return `<td class="${i===m?'sel':''}"><span class="a">${f(v)}</span>${d!=null?`<span class="d ${colorize?cls(d):''}">${d>0.0001?'▲':d<-0.0001?'▼':'='} ${signP(d)}</span>`:''}</td>`; };
+  const row = (label, fn, f, colorize) => `<tr><td>${label}</td>${MONTHS.map((_,i)=>cell(fn(i,y), fn(i,y-1), i, f, colorize)).join('')}</tr>`;
+  h += `<div class="scroll"><table class="mx"><thead><tr><th>${y} <span style="font-weight:400;text-transform:none">(variation vs ${y-1})</span></th>${MONTHS.map((n,i)=>`<th class="${i===m?'sel':''}">${n}</th>`).join('')}</tr></thead><tbody>
+    ${row('<b>Coût / repas sans boissons</b>', (i,yr)=>costMeal(i,yr), x=>fmt2.format(x), true)}
+    ${row('Coût / repas avec boissons', (i,yr)=>costMeal(i,yr,true), x=>fmt2.format(x), true)}
+    ${row('Nombre de repas', (i,yr)=>meals(i,yr), x=>fmtInt.format(x), false)}
+  </tbody></table></div>`;
+  B.innerHTML = h;
+}
+
+/* ---------- analysis table ---------- */
+function drawAnalysis(){
+  const m=S.sel, y=S.year, T=monthTotal(m), [pm,py]=prevOf(m), hasP=has(pm,py), hasY=has(m,y-1);
+  $('tTitle').textContent = `Analyse par famille — ${ML(m,y)}`;
+  let h = `<thead>
+    <tr><th></th><th></th><th class="grp bl" colspan="3">Vs ${ML(m,y-1)}</th><th class="grp bl" colspan="2">Vs mois précédent</th><th class="grp bl" colspan="2">Vs moyenne</th><th class="bl"></th></tr>
+    <tr><th>Famille</th><th>${MS(m,y)}</th><th class="bl">${MS(m,y-1)}</th><th>Écart</th><th class="pc">%</th><th class="bl">${MS(pm,py)}</th><th class="pc">%</th><th class="bl">Moy. antér.</th><th class="pc">%</th><th class="bl pc">Part</th></tr></thead><tbody>`;
+  const mk = (r,lvl) => ({r, lvl, v:val(r,m), n1: hasY?val(r,m,y-1):null, p: hasP?val(r,pm,py):null, a: avgBefore(r,m)});
+  const rows = S.rows.map(r=>mk(r,0)).sort((a,b)=>b.v-a.v).flatMap(x => [...(x.r.subs?[mk(virtOf(x.r),1)]:[]), ...(x.r.subs||[]).map(s=>mk(s,1)), x]);
+  const line = (label, v, n1, p, a, part, style='') => {
+    const d1 = n1!=null ? v-n1 : null, dp = p!=null ? v-p : null, da = a!=null ? v-a : null;
+    return `<tr${style}><td>${label}</td><td><b>${fmt.format(v)}</b></td>
+      <td class="bl">${n1!=null?fmt.format(n1):'–'}</td><td class="${d1!=null?cls(d1):''}">${d1!=null?signE(d1):'–'}</td><td class="pc ${d1!=null?cls(d1):''}">${d1!=null&&n1?signP(d1/n1):'–'}</td>
+      <td class="bl">${p!=null?fmt.format(p):'–'}</td><td class="pc ${dp!=null?cls(dp):''}">${dp!=null&&p?signP(dp/p):'–'}</td>
+      <td class="bl">${a!=null?fmt.format(a):'–'}</td><td class="pc ${da!=null?cls(da):''}">${da!=null&&a?signP(da/a):'–'}</td>
+      <td class="bl pc">${part}</td></tr>`; };
+  rows.forEach(({r,lvl,v,n1,p,a}) => { h += line(nameCell({o:r,lvl}), v, n1, p, a, T?Math.round(v/T*100)+'\u202f%':'–', lvl?' style="font-size:13px"':(r.subs?' class="tot"':'')); });
+  h += '</tbody><tfoot>' + line('Total', T, hasY?monthTotal(m,y-1):null, hasP?monthTotal(pm,py):null, avgTotalBefore(m), T?'100\u202f%':'–') + '</tfoot>';
+  $('analysis').innerHTML = h;
+}
+
+/* ---------- chart: families of the month, N vs N-1 ---------- */
+function drawChartFam(){
+  const m=S.sel, y=S.year, el=$('chartFam'); $('lgM').textContent = ML(m,y); $('lgM1').textContent = ML(m,y-1);
+  const hasY = has(m,y-1);
+  const rows = entries().map(e=>({e, v:val(e.o,m), p: hasY?val(e.o,m,y-1):null})).filter(x=>x.v||x.p);
+  if (!rows.length){ el.innerHTML='<p class="empty">Aucun montant saisi pour ce mois.</p>'; return; }
+  const W=Math.max(300, el.clientWidth||520), LW=Math.min(175, W*0.42), R=92, rowH=34, H=rows.length*rowH+4;
+  const max = Math.max(...rows.map(x=>Math.max(x.v, x.p||0)))||1, pw=W-LW-R;
+  let s = `<svg width="100%" viewBox="0 0 ${W} ${H}" role="img" aria-label="Répartition du mois par famille">`;
+  rows.forEach((x,i)=>{ const yy=i*rowH+4, bh=10, by=yy+5, w=x.v/max*pw, w1=(x.p||0)/max*pw;
+    const nm = (x.e.lvl?'   ':'') + (x.e.o.name||'Sans nom'); const label = nm.length>24 ? nm.slice(0,23)+'…' : nm;
+    s+=`<text x="${LW-8}" y="${by+bh+3}" text-anchor="end" font-size="12" fill="var(${x.e.lvl?'--muted':'--ink2'})">${esc(label)}</text>`;
+    if (w>0) s+=`<path d="M${LW},${by} H${LW+w-Math.min(3,w)} Q${LW+w},${by} ${LW+w},${by+Math.min(3,w)} V${by+bh-Math.min(3,w)} Q${LW+w},${by+bh} ${LW+w-Math.min(3,w)},${by+bh} H${LW} Z" fill="var(--s1)"/>`;
+    if (w1>0) s+=`<path d="M${LW},${by+bh+2} H${LW+w1-Math.min(3,w1)} Q${LW+w1},${by+bh+2} ${LW+w1},${by+bh+2+Math.min(3,w1)} V${by+2*bh+2-Math.min(3,w1)} Q${LW+w1},${by+2*bh+2} ${LW+w1-Math.min(3,w1)},${by+2*bh+2} H${LW} Z" fill="var(--prev)"/>`;
+    s+=`<text x="${W-4}" y="${by+bh-1}" text-anchor="end" font-size="12" fill="var(--ink)">${fmt.format(x.v)}</text>`;
+    if (x.p) { const d=(x.v-x.p)/x.p; s+=`<text x="${W-4}" y="${by+2*bh+3}" text-anchor="end" font-size="11" font-weight="600" fill="var(${d>0.0001?'--critical':d<-0.0001?'--good':'--ink2'})">${signP(d)}</text>`; }
+    s+=`<rect x="0" y="${yy}" width="${W}" height="${rowH}" fill="transparent" data-i="${i}"/>`;
+  });
+  s+=`<line x1="${LW}" x2="${LW}" y1="0" y2="${H}" stroke="var(--axis)"/></svg>`;
+  el.innerHTML=s;
+  el.querySelectorAll('rect[data-i]').forEach(r=>{ const x=rows[+r.dataset.i];
+    r.onmouseenter=e=>showTip(e,`<b>${esc(x.e.o.name)}</b><br>${ML(m,y)} : ${fmt.format(x.v)}<br>${ML(m,y-1)} : ${x.p!=null?fmt.format(x.p):'–'}${x.p?`<br>Écart : ${signE(x.v-x.p)} (${signP((x.v-x.p)/x.p)})`:''}`);
+    r.onmousemove=moveTip; r.onmouseleave=hideTip; });
+}
+
+/* ---------- alerts ---------- */
+function drawAlerts(){
+  const m=S.sel, y=S.year, list=[], hasY=has(m,y-1);
+  entries().forEach(({o:r})=>{ const v=val(r,m);
+    if (hasY){ const p=val(r,m,y-1), d=v-p; if (Math.abs(d)>=MIN_ABS && (p===0 || Math.abs(d)/p>=THR)) list.push({n:r.name||'Sans nom', v, ref:p, d, k:`vs ${MONTHS[m].toLowerCase()} ${y-1}`}); }
+    const a=avgBefore(r,m); if (a!=null){ const d=v-a; if (Math.abs(d)>=MIN_ABS && (a===0 || Math.abs(d)/a>=THR)) list.push({n:r.name||'Sans nom', v, ref:a, d, k:'vs moyenne'}); }
+  });
+  list.sort((x,z)=>Math.abs(z.d)-Math.abs(x.d));
+  if (!hasY && !prevMonths(m).length){ $('alerts').innerHTML='<li class="empty">Saisissez l\'année précédente ou des mois antérieurs pour détecter les écarts.</li>'; return; }
+  $('alerts').innerHTML = list.length ? list.map(x=>`<li><span class="ic ${cls(x.d)}">${x.d>0?'▲':'▼'}</span>
+    <span><b>${esc(x.n)}</b> : ${fmt.format(x.v)} contre ${fmt.format(x.ref)}, soit <span class="${cls(x.d)}">${signE(x.d)} (${x.ref?signP(x.d/x.ref):'nouveau'})</span><span class="pill">${x.k}</span></span></li>`).join('')
+    : '<li><span class="ic down">✓</span><span>Aucun écart significatif ce mois-ci.</span></li>';
+}
+
+/* ---------- matrix ---------- */
+function drawMatrix(){
+  const y=S.year, yoy = S.cmp!=='prev';
+  document.querySelectorAll('#cmpSeg button').forEach(b=>b.classList.toggle('on', b.dataset.c===(yoy?'yoy':'prev')));
+  $('mxSub').textContent = yoy ? `Montant ${y} de chaque famille et variation par rapport au même mois de ${y-1}`
+                               : `Montant ${y} de chaque famille et variation par rapport au mois précédent`;
+  const cell = (r, i) => {
+    if (!has(i)) return `<td class="${i===S.sel?'sel':''}"><span class="a" style="color:var(--muted)">–</span></td>`;
+    const cur = r ? val(r,i) : monthTotal(i);
+    const [rm, ry] = yoy ? [i, y-1] : prevOf(i);
+    let d='';
+    if (has(rm, ry)){ const ref = r ? val(r,rm,ry) : monthTotal(rm,ry), diff=cur-ref;
+      d = ref ? `<span class="d ${cls(diff)}">${diff>0.0001?'▲':diff<-0.0001?'▼':'='} ${signP(diff/ref)}</span>` : (cur?`<span class="d">nouveau</span>`:''); }
+    return `<td class="${i===S.sel?'sel':''}"><span class="a">${fmt.format(cur)}</span>${d}</td>`;
+  };
+  let h = `<thead><tr><th>Famille</th>${MONTHS.map((n,i)=>`<th class="${i===S.sel?'sel':''}">${n}</th>`).join('')}<th class="bl">Cumul ${y}</th><th>${yoy?'Vs '+(y-1)+' à date':''}</th></tr></thead><tbody>`;
+  const last = Math.max(-1, ...MONTHS.map((_,i)=>has(i)?i:-1));
+  const cum = (r, yr) => { let s=0; for(let i=0;i<=last;i++) s += r ? val(r,i,yr) : monthTotal(i,yr); return s; };
+  const tail = r => { const c=cum(r,y), c1=cum(r,y-1); return `<td class="bl"><b>${fmt.format(c)}</b></td><td class="${yoy&&c1?cls(c-c1):''}">${yoy&&c1?signP((c-c1)/c1):''}</td>`; };
+  entries().forEach(e=>{ h += `<tr${e.lvl?' style="font-size:13px"':(e.o.subs?' class="tot"':'')}><td>${nameCell(e)}</td>${MONTHS.map((_,i)=>cell(e.o,i)).join('')}${tail(e.o)}</tr>`; });
+  h += `</tbody><tfoot><tr><td>Total</td>${MONTHS.map((_,i)=>cell(null,i)).join('')}${tail(null)}</tr></tfoot>`;
+  $('matrix').innerHTML = h;
+}
+
+/* ---------- one family ---------- */
+function drawFamSel(){
+  const sel=$('famSel'), E=entries(); const cur = Math.min(S.fam||0, Math.max(0,E.length-1));
+  sel.innerHTML = E.map((e,i)=>`<option value="${i}" ${i===cur?'selected':''}>${e.lvl?'    ':''}${esc(e.o.name)||'Sans nom'}</option>`).join('');
+  S.fam = cur;
+}
+function drawChartOne(){
+  const el=$('chartOne'), r=(entries()[S.fam]||{}).o;
+  if (!r){ el.innerHTML='<p class="empty">Ajoutez une famille pour voir son évolution.</p>'; return; }
+  groupedChart(el, i=>has(i)?val(r,i):null, i=>has(i,S.year-1)?val(r,i,S.year-1):null, {aria:'Évolution de la famille', title:r.name||'Sans nom', sel:S.sel});
+}
+
+/* ---------- entry grid (selected year) ---------- */
+const pctTxt = (v,t) => t ? Math.round(v/t*100)+'\u202f%' : '–';
+function drawGrid(){
+  const m=S.sel, y=S.year, L=leaves(), cnt=MONTHS.map((_,i)=>i).filter(i=>has(i)).length, grand=S.rows.reduce((s,r)=>s+yearTot(r),0);
+  $('gYear').textContent = y;
+  let h = `<thead><tr><th>Famille</th>${MONTHS.map((n,i)=>`<th class="${i===m?'sel':''}">${n}</th>`).join('')}<th>Total ${y}</th><th>Moy./mois</th><th>Part</th><th></th></tr></thead><tbody>`;
+  const calcs = (key, r) => { const t=yearTot(r);
+    return `<td class="calc" data-tot="${key}">${fmt.format(t)}</td><td class="calc" data-avg="${key}">${cnt?fmt.format(t/cnt):'–'}</td><td class="calc" data-pt="${key}">${pctTxt(t,grand)}</td>`; };
+  const inputs = (o, li) => MONTHS.map((_,i)=>{ const v=lv(o,y)[i]; return `<td class="${i===m?'sel':''}"><input data-l="${li}" data-m="${i}" inputmode="decimal" value="${v!=null?fmtN.format(v):''}"></td>`; }).join('');
+  S.rows.forEach((r,ri)=>{
+    if (r.subs){ const v=virtOf(r);
+      h += `<tr><td style="white-space:nowrap"><input class="fam" data-rest="${ri}" value="${esc(v.name)}" placeholder="Nom" style="width:150px;font-weight:400;padding-left:16px;color:var(--ink2)"><span class="pill">calculé</span></td>`;
+      MONTHS.forEach((_,i)=>{ const x=val(v,i); h += `<td class="calc ${i===m?'sel':''}" data-pm="${ri}-${i}" style="${x<0?'color:var(--critical);font-weight:600':''}">${has(i)?fmt.format(x):'–'}</td>`; });
+      h += calcs(ri+'.v', v) + '<td></td></tr>';
+      r.subs.forEach((x,si)=>{
+        h += `<tr><td><input class="fam" data-name="${ri}.${si}" value="${esc(x.name)}" placeholder="Sous-famille" style="font-weight:400;padding-left:16px"></td>`;
+        h += inputs(x, L.findIndex(l=>l.ri===ri&&l.si===si)) + calcs(ri+'.'+si, x) + `<td></td></tr>`;
+      });
+    }
+    h += `<tr${r.subs?' class="tot"':''}><td><input class="fam" data-name="${ri}" value="${esc(r.name)}" placeholder="Nom de la famille" style="${r.subs?'font-weight:700':''}"></td>`;
+    h += inputs(r, L.findIndex(l=>l.ri===ri&&l.si===null));
+    h += calcs(String(ri), r) + `<td></td></tr>`;
+  });
+  h += `</tbody><tfoot><tr><td style="padding-left:9px">Total</td>${MONTHS.map((_,i)=>`<td class="calc ${i===m?'sel':''}" data-mt="${i}">${has(i)?fmt.format(monthTotal(i)):'–'}</td>`).join('')}<td class="calc" id="gTot">${fmt.format(grand)}</td><td></td><td></td><td></td></tr>${hasRoles()?`<tr><td style="padding-left:9px;font-weight:500">Nombre de repas</td>${MONTHS.map((_,i)=>`<td class="${i===m?'sel':''}"><input data-meal="${i}" inputmode="numeric" value="${meals(i)!=null?fmtInt.format(meals(i)):''}"></td>`).join('')}<td class="calc">${fmtInt.format(MONTHS.reduce((s,_,i)=>s+(meals(i)||0),0))}</td><td></td><td></td><td></td></tr>`:''}</tfoot>`;
+  $('grid').innerHTML = h;
+
+  $('grid').querySelectorAll('input[data-name]').forEach(inp=>{
+    const [ri,si]=inp.dataset.name.split('.'); const o = si!=null ? S.rows[+ri].subs[+si] : S.rows[+ri];
+    inp.oninput=()=>{ o.name=inp.value; save(); refreshViews(); };
+  });
+  $('grid').querySelectorAll('input[data-meal]').forEach(inp=>{ const i=+inp.dataset.meal;
+    inp.onfocus=()=>{ if(meals(i)!=null) inp.value=meals(i); inp.select(); };
+    inp.onblur=()=>{ inp.value = meals(i)!=null ? fmtInt.format(meals(i)) : ''; };
+    inp.oninput=()=>{ setMeals(i,S.year,parse(inp.value)); save(); refreshViews(true); }; });
+  $('grid').querySelectorAll('input[data-rest]').forEach(inp=>{ const r=S.rows[+inp.dataset.rest];
+    inp.oninput=()=>{ r.rest=inp.value; save(); refreshViews(); }; });
+  $('grid').querySelectorAll('input[data-l]').forEach(inp=>{
+    const li=+inp.dataset.l, mi=+inp.dataset.m, o=L[li].o;
+    inp.onfocus=()=>{ const v=lv(o,S.year)[mi]; if (v!=null) inp.value=String(v).replace('.',','); inp.select(); };
+    inp.onblur=()=>{ const v=lv(o,S.year)[mi]; inp.value = v!=null ? fmtN.format(v) : ''; };
+    inp.oninput=()=>{ setv(o,S.year,mi,parse(inp.value)); save(); refreshViews(true); };
+    inp.onkeydown=e=>{ if (e.key==='Enter'){ e.preventDefault(); const nx=$('grid').querySelector(`input[data-l="${li+1}"][data-m="${mi}"]`); if(nx) nx.focus(); else inp.blur(); } };
+    inp.onpaste=e=>{ const t=(e.clipboardData||window.clipboardData).getData('text'); if(!/[\t\n]/.test(t.trim())) return;
+      e.preventDefault(); t.replace(/\r/g,'').replace(/\n$/,'').split('\n').forEach((ln,dr)=>{ const l=L[li+dr]; if(!l) return;
+        ln.split('\t').forEach((c,dc)=>{ if(mi+dc<12) setv(l.o,S.year,mi+dc,parse(c)); }); });
+      save(); renderAll(); toast('Données collées'); };
+  });
+  $('grid').querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ const r=S.rows[+b.dataset.del];
+    confirmBox(`Supprimer la famille « ${r.name||'Sans nom'} »${r.subs?' et ses sous-familles':''} avec ses montants de toutes les années ?`, ()=>{ S.rows.splice(+b.dataset.del,1); save(); renderAll(); }); });
+  $('grid').querySelectorAll('[data-delsub]').forEach(b=>b.onclick=()=>{ const [ri,si]=b.dataset.delsub.split('.').map(Number), r=S.rows[ri];
+    confirmBox(`Supprimer la sous-famille « ${r.subs[si].name||'Sans nom'} » ? Ses montants restent inclus dans le total de la famille.`, ()=>{ r.subs.splice(si,1);
+      if (!r.subs.length){ delete r.subs; delete r._v; } save(); renderAll(); }); });
+  $('grid').querySelectorAll('[data-addsub]').forEach(b=>b.onclick=()=>{ const r=S.rows[+b.dataset.addsub];
+    (r.subs ||= []).unshift({name:'Nouvelle sous-famille', y:{}});
+    save(); renderAll(); const i=$('grid').querySelector(`input[data-name="${b.dataset.addsub}.0"]`); if(i){ i.focus(); i.select(); }
+    toast('Sous-famille ajoutée : saisissez son montant, « Autres » se calcule tout seul'); });
+}
+function updateGridCalcs(){
+  const cnt=MONTHS.map((_,i)=>i).filter(i=>has(i)).length, grand=S.rows.reduce((s,r)=>s+yearTot(r),0), g=$('grid');
+  entries().forEach(e=>{ const t=yearTot(e.o), q=k=>g.querySelector(`[data-${k}="${e.key}"]`);
+    q('tot').textContent=fmt.format(t); q('avg').textContent=cnt?fmt.format(t/cnt):'–'; q('pt').textContent=pctTxt(t,grand); });
+  S.rows.forEach((r,ri)=>{ if(r.subs) MONTHS.forEach((_,i)=>{ const c=g.querySelector(`[data-pm="${ri}-${i}"]`), x=val(virtOf(r),i);
+    c.textContent = has(i)?fmt.format(x):'–'; c.style.color = x<0?'var(--critical)':''; c.style.fontWeight = x<0?'600':''; }); });
+  MONTHS.forEach((_,i)=>{ g.querySelector(`[data-mt="${i}"]`).textContent = has(i)?fmt.format(monthTotal(i)):'–'; });
+  $('gTot').textContent = fmt.format(grand);
+}
+
+/* ---------- quick monthly entry form ---------- */
+let Q = {m:null, y:null};
+function qOrder(){ // family total first, then its sub-families, then computed remainder
+  return S.rows.flatMap(r => [{o:r, kind: r.subs?'tot':'leaf'}, ...(r.subs||[]).map(x=>({o:x, kind:'sub', parent:r})), ...(r.subs?[{o:virtOf(r), kind:'calc', parent:r}]:[])]);
+}
+function drawQuick(){
+  if (Q.m==null){ Q.m=S.sel; Q.y=S.year; }
+  $('qM').innerHTML = MONTHS_L.map((n,i)=>`<option value="${i}" ${i===Q.m?'selected':''}>${n[0].toUpperCase()+n.slice(1)}</option>`).join('');
+  const ys=[]; for(let y=S.year-3;y<=S.year+1;y++) ys.push(y);
+  $('qY').innerHTML = ys.map(y=>`<option ${y===Q.y?'selected':''}>${y}</option>`).join('');
+  $('qFields').innerHTML = qOrder().map((f,i)=>{
+    const v = f.kind==='calc' ? null : lv(f.o,Q.y)[Q.m];
+    return (i===0 && hasRoles() ? `<label class="qfield"><span>Nombre de repas</span><div class="in nr"><input id="qMeals" inputmode="numeric" placeholder="0" value="${meals(Q.m,Q.y)??''}"></div></label><div class="qbreak"></div>` : '') +
+      `<label class="qfield ${f.kind==='sub'?'sub':''} ${f.kind==='calc'?'calc sub':''}"><span>${esc(f.o.name)||'Sans nom'}${f.kind==='calc'?' (calculé)':''}</span>
+      <div class="in"><input data-q="${i}" inputmode="decimal" placeholder="0,00" ${f.kind==='calc'?'readonly tabindex="-1"':''} value="${v!=null?String(v).replace('.',','):''}"></div></label>${f.kind==='calc'?'<div class="qbreak"></div>':''}`; }).join('');
+  $('qFields').querySelectorAll('input:not([readonly])').forEach(inp=>{ inp.oninput=qCalc; inp.onfocus=()=>inp.select(); });
+  if (!S.rows.length) $('qFields').innerHTML = `<p class="empty" style="grid-column:1/-1">Aucune famille : créez-les dans « ⚙ Mes familles ».</p>`;
+  qCalc();
+}
+function qVals(){ const F=qOrder(), out=new Map();
+  $('qFields').querySelectorAll('input[data-q]').forEach(inp=>{ const f=F[+inp.dataset.q]; if(f.kind!=='calc') out.set(f.o, parse(inp.value)); });
+  return out; }
+const qMealsVal = () => $('qMeals') ? parse($('qMeals').value) : undefined;
+function qCalc(){
+  const F=qOrder(), V=qVals();
+  $('qFields').querySelectorAll('input[data-q]').forEach(inp=>{ const f=F[+inp.dataset.q]; if (f.kind!=='calc') return;
+    const tot=V.get(f.parent), subs=f.parent.subs.reduce((s,x)=>s+(V.get(x)||0),0);
+    inp.value = tot!=null ? fmtN.format(tot-subs) : ''; inp.style.color = tot!=null && tot-subs<0 ? 'var(--critical)' : ''; });
+  const total = S.rows.reduce((s,r)=>s+(V.get(r)||0),0), filled=[...V.values()].some(v=>v!=null);
+  const Y = has(Q.m,Q.y-1) ? monthTotal(Q.m,Q.y-1) : null;
+  const nM = qMealsVal(), rep = S.rows.filter(r=>r.role==='repas').reduce((s,r)=>s+(V.get(r)||0),0), drk = S.rows.filter(r=>r.role==='boissons').reduce((s,r)=>s+(V.get(r)||0),0);
+  const cm = nM ? ` · Coût / repas : <b>${fmt2.format(rep/nM)}</b> sans boissons, <b>${fmt2.format((rep+drk)/nM)}</b> avec` : '';
+  $('qSum').innerHTML = filled ? `Total du mois : <b>${fmt.format(total)}</b>${Y?` · vs ${ML(Q.m,Q.y-1)} : <span class="${cls(total-Y)}">${signE(total-Y)} (${signP((total-Y)/Y)})</span>`:''}${cm}` : 'Aucun montant saisi pour ce mois.';
+}
+$('qM').onchange=e=>{ Q.m=+e.target.value; drawQuick(); };
+$('qY').onchange=e=>{ Q.y=+e.target.value; drawQuick(); };
+$('qReset').onclick=()=>{ $('qFields').querySelectorAll('input:not([readonly])').forEach(i=>i.value=''); qCalc(); };
+$('qForm').onsubmit=e=>{ e.preventDefault();
+  const V=qVals();
+  for (const [o,v] of V){ const sub=S.rows.find(r=>r.subs&&r.subs.includes(o)); const tot=sub?V.get(sub):null;
+    if (sub && tot!=null && v!=null && v>tot){ toast(`${o.name} dépasse ${sub.name} : vérifiez les montants`); return; } }
+  V.forEach((v,o)=>setv(o,Q.y,Q.m,v));
+  if (qMealsVal()!==undefined) setMeals(Q.m,Q.y,qMealsVal());
+  S.year=Q.y; S.sel=Q.m; save(); renderAll(); toast(`${ML(Q.m,Q.y)} enregistré`);
+};
+
+/* ---------- families set-up ---------- */
+function drawSetup(){
+  const B=$('setupBody'), R=S.rows;
+  let h='';
+  if (!R.length){
+    h += `<p style="margin:16px 0 0;font-weight:600">Pour commencer, choisissez un modèle :</p><div class="tpl">` +
+      Object.entries(TEMPLATES).map(([k,t])=>`<button data-tpl="${k}"><b>${t.label}</b><small>${t.desc}</small></button>`).join('') +
+      `</div><p class="hint">Tout reste modifiable ensuite. Vous pouvez aussi <a href="#" id="seeEx">voir un exemple rempli</a>.</p>`;
+    B.innerHTML=h;
+    B.querySelectorAll('[data-tpl]').forEach(b=>b.onclick=()=>{ const keep=S; S=freshState(b.dataset.tpl); S.org=keep.org||''; save(); renderAll(); drawSetup(); });
+    $('seeEx').onclick=e=>{ e.preventDefault(); S=exampleState(); save(); renderAll(); closeSetup(); toast('Exemple chargé — « ⚙ Mes familles » pour créer les vôtres'); };
+    return;
+  }
+  h += `<label class="orgf">Établissement <input id="orgS" value="${esc(S.org)}" placeholder="Nom de l'établissement ou du service"></label><div class="fl">`;
+  R.forEach((r,ri)=>{
+    h += `<div class="fr"><input data-fn="${ri}" value="${esc(r.name)}" placeholder="Nom de la famille" style="font-weight:600">
+      <select class="sel" data-role="${ri}" title="Prise en compte dans le coût par repas" style="padding:6px 6px;font-size:12.5px">
+        <option value="" ${!r.role?'selected':''}>Hors coût repas</option><option value="repas" ${r.role==='repas'?'selected':''}>Coût repas</option><option value="boissons" ${r.role==='boissons'?'selected':''}>Boissons</option></select>
+      <button class="ib" data-up="${ri}" ${ri===0?'disabled':''} title="Monter">↑</button><button class="ib" data-dn="${ri}" ${ri===R.length-1?'disabled':''} title="Descendre">↓</button>
+      <button class="ib" data-as="${ri}">+ sous-famille</button><button class="ib x" data-df="${ri}" title="Supprimer">✕</button></div>`;
+    (r.subs||[]).forEach((x,si)=>{ h += `<div class="fr sub"><span style="color:var(--muted);font-size:13px">dont</span><input data-sn="${ri}.${si}" value="${esc(x.name)}" placeholder="Nom de la sous-famille"><button class="ib x" data-ds="${ri}.${si}" title="Supprimer">✕</button></div>`; });
+    if (r.subs) h += `<div class="fr calc"><span>dont</span><input data-rn="${ri}" value="${esc(virtOf(r).name)}" placeholder="Nom de la ligne calculée"><span style="white-space:nowrap">= ${esc(r.name)||'total'} − sous-familles <i>(calculé)</i></span></div>`;
+  });
+  h += `</div><div class="btns" style="margin-top:12px;justify-content:space-between"><button class="b" id="addF">+ Ajouter une famille</button><button class="b p" id="setupDone">Terminé</button></div>
+    <p class="hint"><b>Coût par repas</b> : « Coût repas » = familles comptées dans le coût par repas sans boissons ; « Boissons » = ajoutées pour le coût avec boissons ; les autres n'entrent pas dans le calcul.<br>Pour une famille avec sous-familles, vous saisissez le total et chaque sous-famille ; la ligne « calculée » donne le reste. Supprimer une famille efface ses montants.</p>`;
+  B.innerHTML=h;
+  const re=()=>{ save(); renderAll(); drawSetup(); };
+  $('orgS').oninput=e=>{ S.org=e.target.value; $('org').value=S.org; save(); };
+  B.querySelectorAll('[data-fn]').forEach(i=>i.oninput=()=>{ R[+i.dataset.fn].name=i.value; save(); renderAll(); });
+  B.querySelectorAll('[data-sn]').forEach(i=>i.oninput=()=>{ const [a,b]=i.dataset.sn.split('.').map(Number); R[a].subs[b].name=i.value; save(); renderAll(); });
+  B.querySelectorAll('[data-rn]').forEach(i=>i.oninput=()=>{ R[+i.dataset.rn].rest=i.value; save(); renderAll(); });
+  B.querySelectorAll('[data-role]').forEach(sl=>sl.onchange=()=>{ const r=R[+sl.dataset.role]; if(sl.value) r.role=sl.value; else delete r.role; save(); renderAll(); });
+  B.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>{ const i=+b.dataset.up; [R[i-1],R[i]]=[R[i],R[i-1]]; re(); });
+  B.querySelectorAll('[data-dn]').forEach(b=>b.onclick=()=>{ const i=+b.dataset.dn; [R[i+1],R[i]]=[R[i],R[i+1]]; re(); });
+  B.querySelectorAll('[data-as]').forEach(b=>b.onclick=()=>{ const r=R[+b.dataset.as]; (r.subs ||= []).push({name:'', y:{}}); if(!r.rest) r.rest='Autres '+(r.name||'').toLowerCase(); re();
+    const ins=B.querySelectorAll(`[data-sn^="${b.dataset.as}."]`); ins[ins.length-1].focus(); });
+  B.querySelectorAll('[data-df]').forEach(b=>b.onclick=()=>{ const r=R[+b.dataset.df];
+    const go=()=>{ R.splice(+b.dataset.df,1); re(); };
+    if (!r.name && !yearsWithData(r)) go(); else confirmBox(`Supprimer la famille « ${r.name||'Sans nom'} »${r.subs?' et ses sous-familles':''} avec tous ses montants ?`, go); });
+  B.querySelectorAll('[data-ds]').forEach(b=>b.onclick=()=>{ const [a,c]=b.dataset.ds.split('.').map(Number), r=R[a];
+    const go=()=>{ r.subs.splice(c,1); if(!r.subs.length){ delete r.subs; delete r._v; } re(); };
+    if (!r.subs[c].name) go(); else confirmBox(`Supprimer la sous-famille « ${r.subs[c].name} » ? Ses montants restent inclus dans le total de « ${r.name} ».`, go); });
+  $('addF').onclick=()=>{ R.push({name:'', y:{}}); re(); const ins=B.querySelectorAll('[data-fn]'); ins[ins.length-1].focus(); };
+  $('setupDone').onclick=closeSetup;
+}
+const yearsWithData = r => [r, ...(r.subs||[])].some(o => o.y && Object.values(o.y).some(a=>a.some(v=>v!=null)));
+function openSetup(){ drawSetup(); $('setup').classList.add('show'); }
+function closeSetup(){ S.rows = S.rows.filter((r,i)=>r.name || yearsWithData(r)); S.rows.forEach(r=>{ if(r.subs){ r.subs=r.subs.filter(x=>x.name||yearsWithData(x)); if(!r.subs.length){ delete r.subs; delete r._v; } } });
+  save(); renderAll(); $('setup').classList.remove('show'); }
+$('openSetup').onclick=openSetup; $('openSetup2').onclick=openSetup; $('setupClose').onclick=()=>{ if (S.rows.length) closeSetup(); };
+
+/* ---------- orchestration ---------- */
+function refreshViews(fromGrid){ drawHeader(); drawKpis(); drawRepas(); drawAnalysis(); drawChartMonths(); drawChartFam(); drawAlerts(); drawMatrix(); drawFamSel(); drawChartOne(); if (fromGrid) updateGridCalcs(); }
+function renderAll(){ $('org').value=S.org||''; refreshViews(); drawGrid(); drawQuick(); }
+
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2200); }
+let mCb=null;
+function confirmBox(text, cb){ $('mText').textContent=text; mCb=cb; $('modal').classList.add('show'); }
+$('mNo').onclick=()=>$('modal').classList.remove('show');
+$('mYes').onclick=()=>{ $('modal').classList.remove('show'); if(mCb) mCb(); };
+
+$('org').oninput=e=>{ S.org=e.target.value; save(); };
+const setYear = y => { S.year=y; save(); renderAll(); if(!hasYear(y)) toast(`Aucune donnée pour ${y} : saisissez-la dans le tableau en bas de page`); };
+$('yPrev').onclick=()=>setYear(S.year-1);
+$('yNext').onclick=()=>setYear(S.year+1);
+$('famSel').onchange=e=>{ S.fam=+e.target.value; save(); drawChartOne(); };
+document.querySelectorAll('#cmpSeg button').forEach(b=>b.onclick=()=>{ S.cmp=b.dataset.c; save(); drawMatrix(); });
+
+$('example').onclick=()=>confirmBox('Remplacer vos données par l\'exemple ?', ()=>{ S=exampleState(); save(); renderAll(); toast('Exemple chargé'); });
+$('clear').onclick=()=>confirmBox(`Effacer tous les montants de ${S.year} ? Les familles et les autres années sont conservées.`, ()=>{ leaves().forEach(l=>{ if(l.o.y) delete l.o.y[S.year]; }); S.sel=0; save(); renderAll(); toast(`Montants ${S.year} effacés`); });
+$('copy').onclick=async()=>{
+  const y=S.year, c=v=>String(v).replace('.',',');
+  const lines=[['Famille',...MONTHS_L.map(m=>m+' '+y),'Total '+y].join('\t')];
+  entries().forEach(e=>lines.push([(e.lvl?'    ':'')+e.o.name, ...MONTHS.map((_,i)=>{ const raw = has(i)?val(e.o,i):null; return raw!=null?c(raw):''; }), c(yearTot(e.o))].join('\t')));
+  lines.push(['Total',...MONTHS.map((_,i)=>c(monthTotal(i))), c(S.rows.reduce((s,r)=>s+yearTot(r),0))].join('\t'));
+  if (hasRoles()) { lines.push(['Nombre de repas',...MONTHS.map((_,i)=>meals(i)??'')].join('\t'));
+    lines.push(['Coût / repas sans boissons',...MONTHS.map((_,i)=>{ const c=costMeal(i); return c!=null?c.toFixed(2).replace('.',','):''; })].join('\t'));
+    lines.push(['Coût / repas avec boissons',...MONTHS.map((_,i)=>{ const c=costMeal(i,S.year,true); return c!=null?c.toFixed(2).replace('.',','):''; })].join('\t')); }
+  try{ await navigator.clipboard.writeText(lines.join('\n')); toast('Tableau copié : collez-le dans Excel'); }catch(e){ toast('Copie refusée par le navigateur'); }
+};
+let rz; addEventListener('resize',()=>{ clearTimeout(rz); rz=setTimeout(()=>{ drawChartMonths(); drawChartFam(); drawChartOne(); },150); });
+
+renderAll();
+if (firstRun) openSetup();
+</script>
+</body>
+</html>
