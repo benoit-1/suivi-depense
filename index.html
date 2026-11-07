@@ -153,6 +153,8 @@
   .stkrow .in::after{content:"€";position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--muted)}
   .stktot{display:flex;justify-content:space-between;align-items:center;border-top:1.5px solid var(--axis);margin-top:10px;padding-top:10px;font-size:15px} .stktot b{font-size:20px}
   input.stkclick{cursor:pointer}
+  .bkbox{border:1px solid var(--grid);border-radius:10px;padding:12px 14px;margin-bottom:12px;background:var(--surface)}
+  .bkbox p{margin:4px 0 10px;font-size:13.5px;color:var(--ink2)}
   tfoot td{font-weight:600;border-top:1.5px solid var(--axis);border-bottom:none}
   .up{color:var(--critical)} .down{color:var(--good)}
   .scroll{overflow-x:auto}
@@ -207,6 +209,7 @@
         <h1>Suivi mensuel des dépenses par famille <span class="ver" id="ver" title=""></span></h1>
       </div>
       <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+      <button class="hbtn" id="openBackup">💾 Sauvegarde</button>
       <button class="hbtn" id="openSetup">⚙ Mes familles</button>
       <div class="yearbox">Exercice
         <button id="yPrev" aria-label="Année précédente">◀</button><b id="yLbl"></b><button id="yNext" aria-label="Année suivante">▶</button>
@@ -343,13 +346,30 @@
   <p class="hint" id="stkNote" style="margin:6px 0 0"></p>
   <div class="btns" style="justify-content:space-between;margin-top:14px"><button class="b" id="stkClear">Effacer</button><span class="btns"><button class="b" id="stkNo">Annuler</button><button class="b p" id="stkYes">Valider</button></span></div>
 </div></div>
+<div class="modal" id="bkModal" style="z-index:16"><div class="box" style="max-width:480px;width:calc(100% - 32px)" role="dialog" aria-labelledby="bkT">
+  <div class="ch" style="flex-wrap:nowrap"><h2 id="bkT" style="margin:0;font-size:18px">Sauvegarde des données</h2><button class="b" id="bkClose" aria-label="Fermer">✕</button></div>
+  <p class="sub" style="margin:6px 0 14px">Vos données sont enregistrées dans ce navigateur, sur cet ordinateur uniquement. Une sauvegarde permet de les transférer sur un autre ordinateur ou d'en garder une copie de sécurité.</p>
+  <div class="bkbox">
+    <b>1. Sauvegarder</b>
+    <p>Télécharge un fichier avec toutes vos données : familles, montants, couverts, Nutrisens, stocks.</p>
+    <button class="b p" id="bkExport">⬇ Sauvegarder mes données</button>
+    <p class="hint" id="bkLast" style="margin:8px 0 0"></p>
+  </div>
+  <div class="bkbox">
+    <b>2. Restaurer</b>
+    <p>Choisissez un fichier de sauvegarde : il <b>remplace</b> toutes les données de cet ordinateur.</p>
+    <button class="b" id="bkImport">⬆ Restaurer des données…</button>
+    <input type="file" id="bkFile" accept=".json,application/json" hidden>
+    <p class="hint" id="bkUndo" style="margin:8px 0 0"></p>
+  </div>
+</div></div>
 <div class="modal" id="modal"><div class="box"><p id="mText"></p><div class="btns" style="justify-content:flex-end"><button class="b" id="mNo">Annuler</button><button class="b p" id="mYes">Confirmer</button></div></div></div>
 
 <script>
 /* ===== VERSION : à augmenter à chaque mise à jour ===== */
-const APP_VERSION = '1.5';
+const APP_VERSION = '1.6';
 const APP_DATE = '07/11/2026';
-const APP_NOTES = 'Nouveau en 1.5 : le tableau « Depuis le début de l\'année » montre aussi les années précédentes (ex. 2024) et l\'évolution depuis la plus ancienne. — 1.4 : comparaison sur plusieurs années (montants, évolution, prix par repas). — 1.3 : le formulaire « Saisie du mois » suit toujours le mois et l\'année choisis en haut. — 1.2 : détail du stock par catégorie (Alimentaire, Nutrisens, Boissons, Consommable, Autre). — 1.1 : boissons par repas, stock de fin de mois, variation de stock et consommation réelle. — 1.0 : saisie mensuelle, comparaison N-1, prix de revient, cumul depuis janvier.';
+const APP_NOTES = 'Nouveau en 1.6 : sauvegarde et restauration des données (fichier), pour changer d\'ordinateur ou garder une copie de sécurité. — 1.5 : le tableau « Depuis le début de l\'année » montre aussi les années précédentes (ex. 2024) et l\'évolution depuis la plus ancienne. — 1.4 : comparaison sur plusieurs années (montants, évolution, prix par repas). — 1.3 : le formulaire « Saisie du mois » suit toujours le mois et l\'année choisis en haut. — 1.2 : détail du stock par catégorie (Alimentaire, Nutrisens, Boissons, Consommable, Autre). — 1.1 : boissons par repas, stock de fin de mois, variation de stock et consommation réelle. — 1.0 : saisie mensuelle, comparaison N-1, prix de revient, cumul depuis janvier.';
 /* ====================================================== */
 const MONTHS = ['Janv.','Févr.','Mars','Avr.','Mai','Juin','Juil.','Août','Sept.','Oct.','Nov.','Déc.'];
 const MONTHS_L = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
@@ -1010,6 +1030,40 @@ $('stkYes').onclick=()=>{ if(!stkCtx) return; const {m,yr,after}=stkCtx; const d
   $('stkFields').querySelectorAll('input').forEach(i=>{ const v=parse(i.value); if(v!=null){ det[i.dataset.sc]=v; any=true; } });
   if (any) setStockDet(m,yr,det); else { if (S.stockDet && S.stockDet[yr]) S.stockDet[yr][m]=null; setStock(m,yr,null); }
   save(); closeStock(); renderAll(); if (after) after(); toast(`Stock de fin ${ML(m,yr)} enregistré`); };
+
+/* ---------- backup / restore ---------- */
+const BK_PREV = KEY + '-avant-restauration';
+const dFR = iso => { try { return new Date(iso).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); } catch(e){ return iso; } };
+function drawBackup(){
+  $('bkLast').textContent = S.lastBackup ? `Dernière sauvegarde depuis cet ordinateur : ${dFR(S.lastBackup)}` : 'Aucune sauvegarde faite depuis cet ordinateur.';
+  let prev=null; try { prev = JSON.parse(localStorage.getItem(BK_PREV)); } catch(e){}
+  $('bkUndo').innerHTML = prev && prev.data ? `Les données d'avant la dernière restauration (${dFR(prev.date)}) sont gardées : <a href="#" id="bkRevert">revenir en arrière</a>.` : '';
+  const r=$('bkRevert'); if (r) r.onclick=e=>{ e.preventDefault(); confirmBox('Revenir aux données d\'avant la dernière restauration ?', ()=>{ S=prev.data; save(); renderAll(); closeBackup(); toast('Données précédentes rétablies'); }); };
+}
+function openBackup(){ drawBackup(); $('bkModal').classList.add('show'); }
+function closeBackup(){ $('bkModal').classList.remove('show'); }
+$('openBackup').onclick=openBackup; $('bkClose').onclick=closeBackup;
+$('bkExport').onclick=()=>{
+  const now=new Date(); S.lastBackup=now.toISOString(); save();
+  const payload = { app:'suivi-depenses', version:APP_VERSION, date:now.toISOString(), etablissement:S.org||'', data:JSON.parse(JSON.stringify(S,(k,v)=>k==='_v'?undefined:v)) };
+  const blob = new Blob([JSON.stringify(payload,null,1)], {type:'application/json'});
+  const name = `suivi-depenses-${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}.json`;
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),60000);
+  drawBackup(); toast(`Sauvegarde téléchargée : ${name}`);
+};
+$('bkImport').onclick=()=>$('bkFile').click();
+$('bkFile').onchange=async e=>{
+  const f=e.target.files[0]; e.target.value=''; if(!f) return;
+  let p; try { p=JSON.parse(await f.text()); } catch(err){ toast('Fichier illisible : ce n\'est pas une sauvegarde'); return; }
+  const d = p && p.data;
+  if (!p || p.app!=='suivi-depenses' || !d || !Array.isArray(d.rows)){ toast('Ce fichier n\'est pas une sauvegarde du suivi des dépenses'); return; }
+  const yrs = new Set(); d.rows.forEach(r=>[r,...(r.subs||[])].forEach(o=>Object.keys(o.y||{}).forEach(y=>yrs.add(y))));
+  confirmBox(`Restaurer la sauvegarde du ${dFR(p.date)}${p.etablissement?` (${p.etablissement})`:''} ? ${d.rows.length} familles, années ${[...yrs].sort().join(', ')||'–'}. Elle remplace toutes les données de cet ordinateur.`, ()=>{
+    try { localStorage.setItem(BK_PREV, JSON.stringify({date:new Date().toISOString(), data:JSON.parse(JSON.stringify(S,(k,v)=>k==='_v'?undefined:v))})); } catch(err){}
+    S = d; S.lastBackup = p.date; save(); renderAll(); closeBackup(); toast('Données restaurées');
+  });
+};
 
 /* ---------- orchestration ---------- */
 function refreshViews(fromGrid){ drawHeader(); drawKpis(); drawRepas(); drawStock(); drawAnalysis(); drawChartMonths(); drawChartFam(); drawAlerts(); drawMatrix(); drawMulti(); drawFamSel(); drawChartOne(); if (fromGrid) updateGridCalcs(); }
