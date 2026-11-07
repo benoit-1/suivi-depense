@@ -124,6 +124,14 @@
   .ytd.ytd-up{border-color:var(--critical);background:color-mix(in srgb,var(--critical) 8%,var(--card))} .ytd.ytd-up .yv,.ytd.ytd-up .yl{color:var(--critical)}
   .ytd.ytd-down{border-color:var(--good);background:color-mix(in srgb,var(--good) 8%,var(--card))} .ytd.ytd-down .yv,.ytd.ytd-down .yl{color:var(--good)}
   .rpt{padding-bottom:22px}
+  .sttiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:14px}
+  .stt{border:1px solid var(--grid);border-radius:10px;padding:12px 14px;background:var(--surface)}
+  .stt .l{font-size:12px;color:var(--ink2)} .stt .v{font-size:22px;font-weight:600;margin-top:4px;white-space:nowrap} .stt .n{font-size:12.5px;color:var(--ink2);margin-top:2px}
+  .stt.op{font-size:22px;display:flex;align-items:center;justify-content:center;border:none;background:none;color:var(--muted);padding:0}
+  .verdict{border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:15px;border:1.5px solid var(--axis);background:var(--surface)}
+  .verdict b{font-size:17px}
+  .verdict.mk{border-color:#1565c0;background:color-mix(in srgb,#1565c0 8%,var(--card))} .verdict.mk b{color:#1565c0}
+  .verdict.cs{border-color:#c77700;background:color-mix(in srgb,#c77700 9%,var(--card))} .verdict.cs b{color:#a56300}
   .cumbox{border:1px solid var(--grid);border-radius:10px;padding:12px 14px;margin:0 0 16px;background:var(--surface)}
   .cumt{font-weight:600;margin-bottom:8px} .cumt span{font-weight:400;color:var(--ink2);font-size:13px}
   table.cum td,table.cum th{padding:6px 8px} table.cum tr.hl1 td{background:var(--hl)}
@@ -132,6 +140,7 @@
   .rpt .l{font-size:12px;color:var(--ink2)} .rpt .l{min-height:30px} .rpt .v{font-size:24px;font-weight:600;margin-top:4px} .rpt .n{font-size:12.5px;color:var(--ink2);margin-top:2px}
   .rpt.main{border-color:var(--s1);background:var(--hl)}
   @media (max-width:800px){ .rptiles{grid-template-columns:1fr} }
+  .stk-mk{color:#1565c0;font-weight:600} .stk-cs{color:#a56300;font-weight:600}
   tfoot td{font-weight:600;border-top:1.5px solid var(--axis);border-bottom:none}
   .up{color:var(--critical)} .down{color:var(--good)}
   .scroll{overflow-x:auto}
@@ -218,6 +227,12 @@
     <div class="kpi"><div class="l">Cumul de l'exercice</div><div class="v" id="vC">–</div><div class="n" id="nC"></div></div>
   </section>
 
+  <section class="card" id="stockCard">
+    <div class="ch"><div><h2 id="stTitle">Stock et consommation réelle</h2>
+      <p class="sub">Consommation réelle = stock début de mois + achats − stock fin de mois. Le stock de début est le stock de fin du mois précédent.</p></div></div>
+    <div id="stBody"></div>
+  </section>
+
   <section class="card" id="repasCard">
     <div class="ch">
       <div><h2 id="rpTitle">Coût par repas</h2><p class="sub" id="rpSub"></p></div>
@@ -301,9 +316,9 @@
 
 <script>
 /* ===== VERSION : à augmenter à chaque mise à jour ===== */
-const APP_VERSION = '1.0';
+const APP_VERSION = '1.1';
 const APP_DATE = '07/11/2026';
-const APP_NOTES = 'Saisie mensuelle, comparaison avec l\'année précédente, prix de revient (hors Nutrisens, sans/avec boissons, total), cumul depuis janvier.';
+const APP_NOTES = 'Nouveau en 1.1 : boissons par repas, stock de fin de mois, variation de stock et consommation réelle. — 1.0 : saisie mensuelle, comparaison N-1, prix de revient, cumul depuis janvier.';
 /* ====================================================== */
 const MONTHS = ['Janv.','Févr.','Mars','Avr.','Mai','Juin','Juil.','Août','Sept.','Oct.','Nov.','Déc.'];
 const MONTHS_L = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
@@ -385,6 +400,12 @@ const MS = (m, yr) => `${MONTHS[m]} ${String(yr).slice(2)}`;
 
 /* ---------- meals & cost per meal ---------- */
 const meals = (m, yr=S.year) => (S.meals && S.meals[yr] && S.meals[yr][m]) || null;
+const stockFin = (m, yr=S.year) => { const v = S.stock && S.stock[yr] ? S.stock[yr][m] : null; return v==null ? null : v; };
+const setStock = (m, yr, v) => { S.stock ||= {}; S.stock[yr] ||= Array(12).fill(null); S.stock[yr][m] = v; };
+const stockDeb = (m, yr=S.year) => m>0 ? stockFin(m-1,yr) : stockFin(11,yr-1);
+const varStock = (m, yr=S.year) => { const a=stockDeb(m,yr), b=stockFin(m,yr); return a==null||b==null ? null : b-a; };   // >0 : on a fait du stock
+const consoReelle = (m, yr=S.year) => { const v=varStock(m,yr); return v==null || !has(m,yr) ? null : monthTotal(m,yr) - v; };
+const hasStock = () => !!(S.stock && Object.values(S.stock).some(a=>a.some(v=>v!=null)));
 const setMeals = (m, yr, v) => { S.meals ||= {}; S.meals[yr] ||= Array(12).fill(null); S.meals[yr][m] = v; };
 const roleSum = (role, m, yr=S.year) => S.rows.filter(r=>r.role===role).reduce((s,r)=>s+val(r,m,yr),0);
 const hasRoles = () => S.rows.some(r=>r.role==='repas');
@@ -392,12 +413,14 @@ const hasRoles = () => S.rows.some(r=>r.role==='repas');
 const coreSum = (m, yr=S.year) => S.rows.filter(r=>r.role==='repas').reduce((s,r)=>s+val(r.subs?virtOf(r):r,m,yr),0);
 const hasExcl = () => S.rows.some(r=>r.role==='repas' && r.subs && r.subs.length);
 const exclNames = () => S.rows.filter(r=>r.role==='repas' && r.subs).flatMap(r=>r.subs.map(x=>x.name||'sous-famille')).join(', ');
-const costNum = (m, yr, mode) => mode==='core' ? coreSum(m,yr) : mode==='all' ? monthTotal(m,yr) : roleSum('repas',m,yr) + (mode?roleSum('boissons',m,yr):0);
+const costNum = (m, yr, mode) => mode==='core' ? coreSum(m,yr) : mode==='all' ? monthTotal(m,yr) : mode==='bev' ? roleSum('boissons',m,yr) : mode==='reel' ? consoReelle(m,yr) : roleSum('repas',m,yr) + (mode?roleSum('boissons',m,yr):0);
 /* cumul janvier → mois m : somme des dépenses ÷ somme des repas (mois ayant repas ET dépenses) */
-const costCum = (m, yr, mode) => { let num=0, n=0, k=0; for (let i=0;i<=m;i++){ const r=meals(i,yr); if (r && has(i,yr)) { num+=costNum(i,yr,mode); n+=r; k++; } } return n ? {v:num/n, k, n} : null; };
+const costCum = (m, yr, mode) => { let num=0, n=0, k=0; for (let i=0;i<=m;i++){ const r=meals(i,yr); if (r && has(i,yr)) { const x=costNum(i,yr,mode); if (x==null) continue; num+=x; n+=r; k++; } } return n ? {v:num/n, k, n} : null; };
 const costMeal = (m, yr=S.year, drinks=false) => { const n=meals(m,yr); if (!n || !has(m,yr)) return null;
   if (drinks==='core') return coreSum(m,yr)/n;
   if (drinks==='all') return monthTotal(m,yr)/n;
+  if (drinks==='bev') return roleSum('boissons',m,yr)/n;
+  if (drinks==='reel') { const c=consoReelle(m,yr); return c==null ? null : c/n; }
   return (roleSum('repas',m,yr) + (drinks?roleSum('boissons',m,yr):0)) / n; };
 const fmt2 = new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtInt = new Intl.NumberFormat('fr-FR',{maximumFractionDigits:0});
@@ -509,9 +532,10 @@ function drawRepas(){
     ${tile(ex ? `Coût par repas sans boissons (avec ${esc(ex)})` : 'Coût par repas sans boissons', costMeal(m), costMeal(m,y-1), false, !ex, false)}
     ${tile('Coût par repas avec boissons', costMeal(m,y,true), costMeal(m,y-1,true), false, false, true)}
     ${tile('Prix de revient total (toutes familles)', costMeal(m,y,'all'), costMeal(m,y-1,'all'), false, false, 'all')}
+    ${S.rows.some(r=>r.role==='boissons') ? tile('Boissons par repas', costMeal(m,y,'bev'), costMeal(m,y-1,'bev'), false, false, 'bev') : ''}
     ${tile('Nombre de repas', meals(m), meals(m,y-1), true)}
   </div>`;
-  { const modes = [...(ex?[['core',`Hors boissons, hors ${esc(ex)}`]]:[]), [false,'Sans boissons'+(ex?` (avec ${esc(ex)})`:'')], [true,'Avec boissons'], ['all','Total (toutes familles)']];
+  { const modes = [...(ex?[['core',`Hors boissons, hors ${esc(ex)}`]]:[]), [false,'Sans boissons'+(ex?` (avec ${esc(ex)})`:'')], [true,'Avec boissons'], ['all','Total (toutes familles)'], ...(S.rows.some(r=>r.role==='boissons')?[['bev','Boissons par repas']]:[])];
     const per = `janv. → ${MONTHS[m].toLowerCase()}`;
     h += `<div class="cumbox"><div class="cumt">Depuis le début de l'année <span>(${per} ${y}, comparé à ${per} ${y-1})</span></div><table class="cum"><thead><tr><th>Prix de revient cumulé</th><th>${y}</th><th>${y-1}</th><th>Écart</th><th>%</th></tr></thead><tbody>` +
       modes.map(([md,lab],i)=>{ const a=costCum(m,y,md), b=costCum(m,y-1,md); const d=a&&b? a.v-b.v : null;
@@ -527,8 +551,40 @@ function drawRepas(){
     ${row(ex ? 'Coût / repas sans boissons' : '<b>Coût / repas sans boissons</b>', (i,yr)=>costMeal(i,yr), x=>fmt2.format(x), true)}
     ${row('Coût / repas avec boissons', (i,yr)=>costMeal(i,yr,true), x=>fmt2.format(x), true)}
     ${row('Prix de revient total', (i,yr)=>costMeal(i,yr,'all'), x=>fmt2.format(x), true)}
+    ${S.rows.some(r=>r.role==='boissons') ? row('Boissons par repas', (i,yr)=>costMeal(i,yr,'bev'), x=>fmt2.format(x), true) : ''}
     ${row('Nombre de repas', (i,yr)=>meals(i,yr), x=>fmtInt.format(x), false)}
   </tbody></table></div>`;
+  B.innerHTML = h;
+}
+
+/* ---------- stock card ---------- */
+function drawStock(){
+  const m=S.sel, y=S.year, B=$('stBody');
+  $('stTitle').textContent = `Stock et consommation réelle — ${ML(m,y)}`;
+  if (!hasStock()){ B.innerHTML = `<p class="empty">Saisissez le <b>stock de fin de mois</b> (inventaire) dans « Saisie du mois » ou dans la ligne « Stock fin de mois » du tableau de saisie. Il faut aussi le stock de fin du mois précédent pour calculer la première variation.</p>`; return; }
+  const deb=stockDeb(m,y), fin=stockFin(m,y), ach=has(m,y)?monthTotal(m,y):null, vs=varStock(m,y), co=consoReelle(m,y);
+  const [pm,py]=prevOf(m,y);
+  let h='';
+  if (vs!=null){
+    h += vs>0.005 ? `<div class="verdict mk">▲ <b>Vous avez fait du stock : +${fmt.format(vs)}</b> — vous avez acheté plus que ce que vous avez consommé. La consommation réelle (${fmt.format(co)}) est inférieure aux achats.</div>`
+       : vs<-0.005 ? `<div class="verdict cs">▼ <b>Vous avez consommé du stock : ${fmt.format(-vs)}</b> — vous avez utilisé des produits achetés les mois précédents. La consommation réelle (${fmt.format(co)}) est supérieure aux achats.</div>`
+       : `<div class="verdict">= <b>Stock stable</b> — la consommation réelle est égale aux achats.</div>`;
+  } else h += `<p class="hint" style="margin:0 0 12px">${deb==null?`Stock de fin de ${ML(pm,py)} non saisi : impossible de calculer la variation.`:`Stock de fin de ${ML(m,y)} non saisi.`}</p>`;
+  const t=(l,v,n)=>`<div class="stt"><div class="l">${l}</div><div class="v">${v!=null?fmt.format(v):'–'}</div>${n?`<div class="n">${n}</div>`:''}</div>`;
+  const cr=costMeal(m,y,'reel'), cr1=costMeal(m,y-1,'reel'), ca=costMeal(m,y,'all');
+  h += `<div class="sttiles">${t('Stock début de mois',deb,`fin ${MONTHS[pm].toLowerCase()} ${py}`)}${t('+ Achats du mois',ach)}${t('− Stock fin de mois',fin)}
+    ${t('= Consommation réelle',co, vs!=null?`<span class="${vs>0?'down':vs<0?'up':''}">${vs>0?'':'+'}${fmt.format(-vs)} vs achats</span>`:'')}
+    <div class="stt"><div class="l">Prix de revient réel par repas</div><div class="v">${cr!=null?fmt2.format(cr):'–'}</div><div class="n">${ca!=null?`sur achats : ${fmt2.format(ca)}`:''}${cr!=null&&cr1?` · ${ML(m,y-1)} : <span class="${cls(cr-cr1)}">${signP((cr-cr1)/cr1)}</span>`:''}</div></div></div>`;
+  // monthly table
+  const cell=(v,i,f,cl)=>`<td class="${i===m?'sel':''}">${v==null?'<span style="color:var(--muted)">–</span>':`<span class="${cl?cl(v):''}">${f(v)}</span>`}</td>`;
+  const vsign=v=>(v>0?'+':v<0?'−':'')+fmt.format(Math.abs(v));
+  h += `<div class="scroll"><table class="mx"><thead><tr><th>${y}</th>${MONTHS.map((n,i)=>`<th class="${i===m?'sel':''}">${n}</th>`).join('')}</tr></thead><tbody>
+    <tr><td>Stock fin de mois</td>${MONTHS.map((_,i)=>cell(stockFin(i,y),i,x=>fmt.format(x))).join('')}</tr>
+    <tr><td>Variation de stock</td>${MONTHS.map((_,i)=>cell(varStock(i,y),i,x=>(x>0.005?'▲ ':x<-0.005?'▼ ':'')+vsign(x),x=>x>0.005?'stk-mk':x<-0.005?'stk-cs':'')).join('')}</tr>
+    <tr><td>Achats</td>${MONTHS.map((_,i)=>cell(has(i,y)?monthTotal(i,y):null,i,x=>fmt.format(x))).join('')}</tr>
+    <tr><td><b>Consommation réelle</b></td>${MONTHS.map((_,i)=>cell(consoReelle(i,y),i,x=>'<b>'+fmt.format(x)+'</b>')).join('')}</tr>
+    <tr><td>Prix de revient réel / repas</td>${MONTHS.map((_,i)=>cell(costMeal(i,y,'reel'),i,x=>fmt2.format(x))).join('')}</tr>
+  </tbody></table></div><p class="hint">▲ bleu = on a fait du stock (consommation < achats) · ▼ orange = on a consommé du stock (consommation > achats).</p>`;
   B.innerHTML = h;
 }
 
@@ -651,7 +707,7 @@ function drawGrid(){
     h += inputs(r, L.findIndex(l=>l.ri===ri&&l.si===null));
     h += calcs(String(ri), r) + `<td></td></tr>`;
   });
-  h += `</tbody><tfoot><tr><td style="padding-left:9px">Total</td>${MONTHS.map((_,i)=>`<td class="calc ${i===m?'sel':''}" data-mt="${i}">${has(i)?fmt.format(monthTotal(i)):'–'}</td>`).join('')}<td class="calc" id="gTot">${fmt.format(grand)}</td><td></td><td></td><td></td></tr>${hasRoles()?`<tr><td style="padding-left:9px;font-weight:500">Nombre de repas</td>${MONTHS.map((_,i)=>`<td class="${i===m?'sel':''}"><input data-meal="${i}" inputmode="numeric" value="${meals(i)!=null?fmtInt.format(meals(i)):''}"></td>`).join('')}<td class="calc">${fmtInt.format(MONTHS.reduce((s,_,i)=>s+(meals(i)||0),0))}</td><td></td><td></td><td></td></tr>`:''}</tfoot>`;
+  h += `</tbody><tfoot><tr><td style="padding-left:9px">Total</td>${MONTHS.map((_,i)=>`<td class="calc ${i===m?'sel':''}" data-mt="${i}">${has(i)?fmt.format(monthTotal(i)):'–'}</td>`).join('')}<td class="calc" id="gTot">${fmt.format(grand)}</td><td></td><td></td><td></td></tr>${hasRoles()?`<tr><td style="padding-left:9px;font-weight:500">Nombre de repas</td>${MONTHS.map((_,i)=>`<td class="${i===m?'sel':''}"><input data-meal="${i}" inputmode="numeric" value="${meals(i)!=null?fmtInt.format(meals(i)):''}"></td>`).join('')}<td class="calc">${fmtInt.format(MONTHS.reduce((s,_,i)=>s+(meals(i)||0),0))}</td><td></td><td></td><td></td></tr>`:''}<tr><td style="padding-left:9px;font-weight:500">Stock fin de mois (€)</td>${MONTHS.map((_,i)=>`<td class="${i===m?'sel':''}"><input data-stock="${i}" inputmode="decimal" value="${stockFin(i)!=null?fmtN.format(stockFin(i)):''}"></td>`).join('')}<td></td><td></td><td></td><td></td></tr></tfoot>`;
   $('grid').innerHTML = h;
 
   $('grid').querySelectorAll('input[data-name]').forEach(inp=>{
@@ -665,6 +721,13 @@ function drawGrid(){
     inp.onpaste=e=>{ const t=(e.clipboardData||window.clipboardData).getData('text'); if(!/[\t\n]/.test(t.trim())) return;
       e.preventDefault(); t.replace(/\r/g,'').split('\n')[0].split('\t').forEach((c,dc)=>{ if(i+dc<12) setMeals(i+dc,S.year,parse(c)); });
       save(); renderAll(); toast('Nombres de repas collés'); }; });
+  $('grid').querySelectorAll('input[data-stock]').forEach(inp=>{ const i=+inp.dataset.stock;
+    inp.onfocus=()=>{ if(stockFin(i)!=null) inp.value=String(stockFin(i)).replace('.',','); inp.select(); };
+    inp.onblur=()=>{ inp.value = stockFin(i)!=null ? fmtN.format(stockFin(i)) : ''; };
+    inp.oninput=()=>{ setStock(i,S.year,parse(inp.value)); save(); refreshViews(true); };
+    inp.onpaste=e=>{ const t=(e.clipboardData||window.clipboardData).getData('text'); if(!/[\t\n]/.test(t.trim())) return;
+      e.preventDefault(); t.replace(/\r/g,'').split('\n')[0].split('\t').forEach((c,dc)=>{ if(i+dc<12) setStock(i+dc,S.year,parse(c)); });
+      save(); renderAll(); toast('Stocks collés'); }; });
   $('grid').querySelectorAll('input[data-rest]').forEach(inp=>{ const r=S.rows[+inp.dataset.rest];
     inp.oninput=()=>{ r.rest=inp.value; save(); refreshViews(); }; });
   $('grid').querySelectorAll('input[data-l]').forEach(inp=>{
@@ -710,7 +773,8 @@ function drawQuick(){
   $('qY').innerHTML = ys.map(y=>`<option ${y===Q.y?'selected':''}>${y}</option>`).join('');
   $('qFields').innerHTML = qOrder().map((f,i)=>{
     const v = f.kind==='calc' ? null : lv(f.o,Q.y)[Q.m];
-    return (i===0 && hasRoles() ? `<label class="qfield"><span>Nombre de repas</span><div class="in nr"><input id="qMeals" inputmode="numeric" placeholder="0" value="${meals(Q.m,Q.y)??''}"></div></label><div class="qbreak"></div>` : '') +
+    return (i===0 && hasRoles() ? `<label class="qfield"><span>Nombre de repas</span><div class="in nr"><input id="qMeals" inputmode="numeric" placeholder="0" value="${meals(Q.m,Q.y)??''}"></div></label>` : '') +
+      (i===0 ? `<label class="qfield"><span>Stock fin de mois (inventaire)</span><div class="in"><input id="qStock" inputmode="decimal" placeholder="0,00" value="${stockFin(Q.m,Q.y)!=null?String(stockFin(Q.m,Q.y)).replace('.',','):''}"></div></label><div class="qbreak"></div>` : '') +
       `<label class="qfield ${f.kind==='sub'?'sub':''} ${f.kind==='calc'?'calc sub':''}"><span>${esc(f.o.name)||'Sans nom'}${f.kind==='calc'?' (calculé)':''}</span>
       <div class="in"><input data-q="${i}" inputmode="decimal" placeholder="0,00" ${f.kind==='calc'?'readonly tabindex="-1"':''} value="${v!=null?String(v).replace('.',','):''}"></div></label>${f.kind==='calc'?'<div class="qbreak"></div>':''}`; }).join('');
   $('qFields').querySelectorAll('input:not([readonly])').forEach(inp=>{ inp.oninput=qCalc; inp.onfocus=()=>inp.select(); });
@@ -721,6 +785,7 @@ function qVals(){ const F=qOrder(), out=new Map();
   $('qFields').querySelectorAll('input[data-q]').forEach(inp=>{ const f=F[+inp.dataset.q]; if(f.kind!=='calc') out.set(f.o, parse(inp.value)); });
   return out; }
 const qMealsVal = () => $('qMeals') ? parse($('qMeals').value) : undefined;
+const qStockVal = () => $('qStock') ? parse($('qStock').value) : undefined;
 function qCalc(){
   const F=qOrder(), V=qVals();
   $('qFields').querySelectorAll('input[data-q]').forEach(inp=>{ const f=F[+inp.dataset.q]; if (f.kind!=='calc') return;
@@ -742,6 +807,7 @@ $('qForm').onsubmit=e=>{ e.preventDefault();
     if (sub && tot!=null && v!=null && v>tot){ toast(`${o.name} dépasse ${sub.name} : vérifiez les montants`); return; } }
   V.forEach((v,o)=>setv(o,Q.y,Q.m,v));
   if (qMealsVal()!==undefined) setMeals(Q.m,Q.y,qMealsVal());
+  if (qStockVal()!==undefined) setStock(Q.m,Q.y,qStockVal());
   S.year=Q.y; S.sel=Q.m; save(); renderAll(); toast(`${ML(Q.m,Q.y)} enregistré`);
 };
 
@@ -797,7 +863,7 @@ function closeSetup(){ S.rows = S.rows.filter((r,i)=>r.name || yearsWithData(r))
 $('openSetup').onclick=openSetup; $('openSetup2').onclick=openSetup; $('setupClose').onclick=()=>{ if (S.rows.length) closeSetup(); };
 
 /* ---------- orchestration ---------- */
-function refreshViews(fromGrid){ drawHeader(); drawKpis(); drawRepas(); drawAnalysis(); drawChartMonths(); drawChartFam(); drawAlerts(); drawMatrix(); drawFamSel(); drawChartOne(); if (fromGrid) updateGridCalcs(); }
+function refreshViews(fromGrid){ drawHeader(); drawKpis(); drawRepas(); drawStock(); drawAnalysis(); drawChartMonths(); drawChartFam(); drawAlerts(); drawMatrix(); drawFamSel(); drawChartOne(); if (fromGrid) updateGridCalcs(); }
 function renderAll(){ $('org').value=S.org||''; refreshViews(); drawGrid(); drawQuick(); }
 
 function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2200); }
