@@ -219,6 +219,7 @@
   </div>
 </header>
 
+<div id="saveErr" style="display:none;background:#d03b3b;color:#fff;padding:10px 20px;font-weight:600;text-align:center">⚠ Attention : le navigateur a refusé d'enregistrer vos dernières saisies (espace plein ou navigation privée). Faites tout de suite « 💾 Sauvegarde › Sauvegarder mes données » pour ne rien perdre.</div>
 <main class="wrap">
   <section class="card qf">
     <div class="ch">
@@ -367,9 +368,9 @@
 
 <script>
 /* ===== VERSION : à augmenter à chaque mise à jour ===== */
-const APP_VERSION = '1.6';
+const APP_VERSION = '1.7';
 const APP_DATE = '07/11/2026';
-const APP_NOTES = 'Nouveau en 1.6 : sauvegarde et restauration des données (fichier), pour changer d\'ordinateur ou garder une copie de sécurité. — 1.5 : le tableau « Depuis le début de l\'année » montre aussi les années précédentes (ex. 2024) et l\'évolution depuis la plus ancienne. — 1.4 : comparaison sur plusieurs années (montants, évolution, prix par repas). — 1.3 : le formulaire « Saisie du mois » suit toujours le mois et l\'année choisis en haut. — 1.2 : détail du stock par catégorie (Alimentaire, Nutrisens, Boissons, Consommable, Autre). — 1.1 : boissons par repas, stock de fin de mois, variation de stock et consommation réelle. — 1.0 : saisie mensuelle, comparaison N-1, prix de revient, cumul depuis janvier.';
+const APP_NOTES = 'Correctifs 1.7 : alerte si l\'enregistrement échoue, contrôle complet des fichiers de sauvegarde avant restauration. — 1.6 : sauvegarde et restauration des données (fichier), pour changer d\'ordinateur ou garder une copie de sécurité. — 1.5 : le tableau « Depuis le début de l\'année » montre aussi les années précédentes (ex. 2024) et l\'évolution depuis la plus ancienne. — 1.4 : comparaison sur plusieurs années (montants, évolution, prix par repas). — 1.3 : le formulaire « Saisie du mois » suit toujours le mois et l\'année choisis en haut. — 1.2 : détail du stock par catégorie (Alimentaire, Nutrisens, Boissons, Consommable, Autre). — 1.1 : boissons par repas, stock de fin de mois, variation de stock et consommation réelle. — 1.0 : saisie mensuelle, comparaison N-1, prix de revient, cumul depuis janvier.';
 /* ====================================================== */
 const MONTHS = ['Janv.','Févr.','Mars','Avr.','Mai','Juin','Juil.','Août','Sept.','Oct.','Nov.','Déc.'];
 const MONTHS_L = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
@@ -410,7 +411,9 @@ function freshState(tpl){ const now=new Date(); let m=now.getMonth()-1, y=now.ge
 let S, firstRun=false;
 try { S = JSON.parse(localStorage.getItem(KEY)); } catch(e) {}
 if (!S || !Array.isArray(S.rows)) { S = freshState('resto'); S.rows=[]; firstRun = true; }
-const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S, (k,v)=>k==='_v'?undefined:v)); } catch(e) {} };
+let saveWarned=false;
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S, (k,v)=>k==='_v'?undefined:v)); saveWarned=false; }
+  catch(e) { if (!saveWarned){ saveWarned=true; setTimeout(()=>{ const b=document.getElementById('saveErr'); if(b) b.style.display='block'; },0); } } };
 
 const $ = id => document.getElementById(id);
 const fmt = new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0});
@@ -1032,6 +1035,20 @@ $('stkYes').onclick=()=>{ if(!stkCtx) return; const {m,yr,after}=stkCtx; const d
   save(); closeStock(); renderAll(); if (after) after(); toast(`Stock de fin ${ML(m,yr)} enregistré`); };
 
 /* ---------- backup / restore ---------- */
+function validateBackup(d){
+  const okArr = a => Array.isArray(a) && a.length===12 && a.every(v=>v===null || (typeof v==='number' && isFinite(v)));
+  const okYears = y => y==null || (typeof y==='object' && Object.entries(y).every(([k,a])=>/^\d{4}$/.test(k) && okArr(a)));
+  if (!d.rows.length) return 'aucune famille';
+  for (const r of d.rows){
+    if (typeof r!=='object' || typeof (r.name??'')!=='string') return 'famille invalide';
+    if (!okYears(r.y)) return `montants invalides pour « ${r.name} »`;
+    if (r.subs!=null){ if(!Array.isArray(r.subs)) return 'sous-familles invalides';
+      for (const x of r.subs){ if (typeof x!=='object' || !okYears(x.y)) return `montants invalides pour « ${x&&x.name} »`; } }
+  }
+  for (const k of ['meals','stock']) if (d[k]!=null && !okYears(d[k])) return k==='meals'?'nombres de repas invalides':'stocks invalides';
+  if (typeof d.year!=='number' || typeof d.sel!=='number' || d.sel<0 || d.sel>11) return 'mois ou année invalides';
+  return null;
+}
 const BK_PREV = KEY + '-avant-restauration';
 const dFR = iso => { try { return new Date(iso).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); } catch(e){ return iso; } };
 function drawBackup(){
@@ -1058,6 +1075,9 @@ $('bkFile').onchange=async e=>{
   let p; try { p=JSON.parse(await f.text()); } catch(err){ toast('Fichier illisible : ce n\'est pas une sauvegarde'); return; }
   const d = p && p.data;
   if (!p || p.app!=='suivi-depenses' || !d || !Array.isArray(d.rows)){ toast('Ce fichier n\'est pas une sauvegarde du suivi des dépenses'); return; }
+  const bad = validateBackup(d);
+  if (bad){ toast('Sauvegarde abîmée ou incomplète : ' + bad + '. Rien n\'a été modifié.'); return; }
+  if (p.version && parseFloat(p.version) > parseFloat(APP_VERSION)){ toast(`Cette sauvegarde vient d'une version plus récente (${p.version}) : mettez d'abord l'application à jour.`); return; }
   const yrs = new Set(); d.rows.forEach(r=>[r,...(r.subs||[])].forEach(o=>Object.keys(o.y||{}).forEach(y=>yrs.add(y))));
   confirmBox(`Restaurer la sauvegarde du ${dFR(p.date)}${p.etablissement?` (${p.etablissement})`:''} ? ${d.rows.length} familles, années ${[...yrs].sort().join(', ')||'–'}. Elle remplace toutes les données de cet ordinateur.`, ()=>{
     try { localStorage.setItem(BK_PREV, JSON.stringify({date:new Date().toISOString(), data:JSON.parse(JSON.stringify(S,(k,v)=>k==='_v'?undefined:v))})); } catch(err){}
