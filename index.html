@@ -347,9 +347,9 @@
 
 <script>
 /* ===== VERSION : à augmenter à chaque mise à jour ===== */
-const APP_VERSION = '1.4';
+const APP_VERSION = '1.5';
 const APP_DATE = '07/11/2026';
-const APP_NOTES = 'Nouveau en 1.4 : comparaison sur plusieurs années (montants, évolution, prix par repas). — 1.3 : le formulaire « Saisie du mois » suit toujours le mois et l\'année choisis en haut. — 1.2 : détail du stock par catégorie (Alimentaire, Nutrisens, Boissons, Consommable, Autre). — 1.1 : boissons par repas, stock de fin de mois, variation de stock et consommation réelle. — 1.0 : saisie mensuelle, comparaison N-1, prix de revient, cumul depuis janvier.';
+const APP_NOTES = 'Nouveau en 1.5 : le tableau « Depuis le début de l\'année » montre aussi les années précédentes (ex. 2024) et l\'évolution depuis la plus ancienne. — 1.4 : comparaison sur plusieurs années (montants, évolution, prix par repas). — 1.3 : le formulaire « Saisie du mois » suit toujours le mois et l\'année choisis en haut. — 1.2 : détail du stock par catégorie (Alimentaire, Nutrisens, Boissons, Consommable, Autre). — 1.1 : boissons par repas, stock de fin de mois, variation de stock et consommation réelle. — 1.0 : saisie mensuelle, comparaison N-1, prix de revient, cumul depuis janvier.';
 /* ====================================================== */
 const MONTHS = ['Janv.','Févr.','Mars','Avr.','Mai','Juin','Juil.','Août','Sept.','Oct.','Nov.','Déc.'];
 const MONTHS_L = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
@@ -580,10 +580,14 @@ function drawRepas(){
   </div>`;
   { const modes = [...(ex?[['core',`Hors boissons, hors ${esc(ex)}`]]:[]), [false,'Sans boissons'+(ex?` (avec ${esc(ex)})`:'')], [true,'Avec boissons'], ['all','Total (toutes familles)'], ...(S.rows.some(r=>r.role==='boissons')?[['bev','Boissons par repas']]:[])];
     const per = `janv. → ${MONTHS[m].toLowerCase()}`;
-    h += `<div class="cumbox"><div class="cumt">Depuis le début de l'année <span>(${per} ${y}, comparé à ${per} ${y-1})</span></div><table class="cum"><thead><tr><th>Prix de revient cumulé</th><th>${y}</th><th>${y-1}</th><th>Écart</th><th>%</th></tr></thead><tbody>` +
-      modes.map(([md,lab],i)=>{ const a=costCum(m,y,md), b=costCum(m,y-1,md); const d=a&&b? a.v-b.v : null;
-        return `<tr${i===0?' class="hl1"':''}><td>${i===0?'<b>'+lab+'</b>':lab}</td><td>${a?(i===0?'<b>'+fmt2.format(a.v)+'</b>':fmt2.format(a.v)):'–'}</td><td>${b?fmt2.format(b.v):'–'}</td><td class="${d!=null?cls(d):''}">${d!=null?(d>0?'+':d<0?'−':'')+fmt2.format(Math.abs(d)):'–'}</td><td class="${d!=null?cls(d):''}">${d!=null&&b.v?signP(d/b.v):'–'}</td></tr>`; }).join('') +
-      `</tbody></table>${(()=>{ const a=costCum(m,y,'all'), b=costCum(m,y-1,'all'); return `<p class="hint" style="margin:6px 0 0">${a?`${y} : ${a.k} mois, ${fmtInt.format(a.n)} repas`:''}${b?` · ${y-1} : ${b.k} mois, ${fmtInt.format(b.n)} repas`:''}${a&&b&&a.k!==b.k?' — attention, pas le même nombre de mois saisis':''}</p>`; })()}</div>`; }
+    const YS = [...new Set([...dataYears().filter(v=>v<y), y-1])].filter(v=>v<y).sort((a,b)=>a-b).slice(-3).concat([y]).filter(v=>v===y||modes.some(([md])=>costCum(m,v,md)));
+    const y0 = YS[0], multi = YS.length>2;
+    const fmtD = d => (d>0?'+':d<0?'−':'')+fmt2.format(Math.abs(d));
+    h += `<div class="cumbox"><div class="cumt">Depuis le début de l'année <span>(${per} de chaque année)</span></div><div class="scroll"><table class="cum"><thead><tr><th>Prix de revient cumulé</th>${YS.map(v=>`<th>${v===y?'<b>'+v+'</b>':v}</th>`).join('')}<th class="bl">Écart vs ${y-1}</th><th>%</th>${multi?`<th class="bl">Évolution depuis ${y0}</th>`:''}</tr></thead><tbody>` +
+      modes.map(([md,lab],i)=>{ const vals=YS.map(v=>costCum(m,v,md)); const a=vals[vals.length-1], b=costCum(m,y-1,md), z=vals[0];
+        const d=a&&b? a.v-b.v : null, dz = multi&&a&&z ? a.v-z.v : null;
+        return `<tr${i===0?' class="hl1"':''}><td>${i===0?'<b>'+lab+'</b>':lab}</td>${vals.map((c,k)=>`<td>${c?(k===vals.length-1?'<b>'+fmt2.format(c.v)+'</b>':fmt2.format(c.v)):'–'}</td>`).join('')}<td class="bl ${d!=null?cls(d):''}">${d!=null?fmtD(d):'–'}</td><td class="${d!=null?cls(d):''}">${d!=null&&b.v?signP(d/b.v):'–'}</td>${multi?`<td class="bl ${dz!=null?cls(dz):''}">${dz!=null?`${fmtD(dz)} (${signP(dz/z.v)})`:'–'}</td>`:''}</tr>`; }).join('') +
+      `</tbody></table></div>${(()=>{ const parts=YS.map(v=>{ const c=costCum(m,v,'all'); return c?`${v} : ${c.k} mois, ${fmtInt.format(c.n)} repas`:null; }).filter(Boolean); const ks=new Set(YS.map(v=>{ const c=costCum(m,v,'all'); return c?c.k:null; }).filter(v=>v!=null)); return `<p class="hint" style="margin:6px 0 0">${parts.join(' · ')}${ks.size>1?' — attention, pas le même nombre de mois saisis':''}</p>`; })()}</div>`; }
   if (!meals(m)) h += `<p class="hint" style="margin:-4px 0 12px">Nombre de repas de ${ML(m,y)} non saisi : ajoutez-le dans « Saisie du mois ».</p>`;
   const cell = (v, v1, i, f, colorize) => { if (v==null) return `<td class="${i===m?'sel':''}"><span class="a" style="color:var(--muted)">–</span></td>`;
     const d = v1 ? (v-v1)/v1 : null;
