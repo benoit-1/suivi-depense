@@ -91,6 +91,8 @@
   .qfield.calc input{background:var(--surface);color:var(--ink2);border-style:dashed}
   .qfoot{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-top:14px;padding-top:12px;border-top:1px solid var(--grid)}
   .qsum{font-size:13px;color:var(--ink2)} .qsum b{color:var(--ink);font-size:15px}
+  .ver{display:inline-block;vertical-align:middle;margin-left:10px;font-size:12px;font-weight:600;letter-spacing:.02em;color:var(--head);background:var(--head-ink);border-radius:999px;padding:3px 10px;cursor:help}
+  .verfoot{text-align:center;color:var(--muted);font-size:12px;margin:24px 0 0}
   .hbtn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);color:var(--head-ink);border-radius:7px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
   .hbtn:hover{background:rgba(255,255,255,.16)}
   .modal .box.wide{max-width:720px;width:calc(100% - 32px);max-height:calc(100vh - 40px);overflow:auto;padding:22px}
@@ -113,9 +115,21 @@
   .orgf input{flex:1;font:inherit;border:1px solid var(--axis);border-radius:6px;padding:7px 9px;background:var(--card);color:var(--ink)}
   .emptyp{padding:28px;text-align:center;color:var(--ink2)}
   @media (max-width:640px){ .tpl{grid-template-columns:1fr} }
+  .rpt{display:flex;flex-direction:column}
+  .ytd{margin-top:auto;padding:8px 10px;border-radius:8px;border:1.5px solid var(--axis);background:var(--card);position:relative;top:10px}
+  .rpt .n{margin-bottom:18px}
+  .ytd .yl{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink2);font-weight:600}
+  .ytd .yv{font-size:18px;font-weight:700;margin-top:2px} .ytd .yv span{font-size:13px;font-weight:600}
+  .ytd .ys{font-size:12px;color:var(--ink2);margin-top:1px}
+  .ytd.ytd-up{border-color:var(--critical);background:color-mix(in srgb,var(--critical) 8%,var(--card))} .ytd.ytd-up .yv,.ytd.ytd-up .yl{color:var(--critical)}
+  .ytd.ytd-down{border-color:var(--good);background:color-mix(in srgb,var(--good) 8%,var(--card))} .ytd.ytd-down .yv,.ytd.ytd-down .yl{color:var(--good)}
+  .rpt{padding-bottom:22px}
+  .cumbox{border:1px solid var(--grid);border-radius:10px;padding:12px 14px;margin:0 0 16px;background:var(--surface)}
+  .cumt{font-weight:600;margin-bottom:8px} .cumt span{font-weight:400;color:var(--ink2);font-size:13px}
+  table.cum td,table.cum th{padding:6px 8px} table.cum tr.hl1 td{background:var(--hl)}
   .rptiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
   .rpt{border:1px solid var(--grid);border-radius:10px;padding:12px 14px;background:var(--surface)}
-  .rpt .l{font-size:12px;color:var(--ink2)} .rpt .v{font-size:24px;font-weight:600;margin-top:4px} .rpt .n{font-size:12.5px;color:var(--ink2);margin-top:2px}
+  .rpt .l{font-size:12px;color:var(--ink2)} .rpt .l{min-height:30px} .rpt .v{font-size:24px;font-weight:600;margin-top:4px} .rpt .n{font-size:12.5px;color:var(--ink2);margin-top:2px}
   .rpt.main{border-color:var(--s1);background:var(--hl)}
   @media (max-width:800px){ .rptiles{grid-template-columns:1fr} }
   tfoot td{font-weight:600;border-top:1.5px solid var(--axis);border-bottom:none}
@@ -169,7 +183,7 @@
     <div class="hrow">
       <div>
         <input class="org" id="org" aria-label="Société ou service" placeholder="Nom de l'établissement">
-        <h1>Suivi mensuel des dépenses par famille</h1>
+        <h1>Suivi mensuel des dépenses par famille <span class="ver" id="ver" title=""></span></h1>
       </div>
       <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
       <button class="hbtn" id="openSetup">⚙ Mes familles</button>
@@ -272,6 +286,7 @@
     <div class="scroll"><table class="grid" id="grid"></table></div>
     <p class="hint">Astuce : copiez un bloc de cellules depuis Excel et collez-le dans une case : il est réparti automatiquement à partir de cette case. Pour l'alimentaire : saisissez « Total alimentaire » tel qu'affiché dans votre logiciel et le montant « Nutrisens » ; la ligne « Alimentaire » (total − Nutrisens) se calcule automatiquement. Les familles sont communes à toutes les années. Les données restent enregistrées dans ce navigateur.</p>
   </section>
+  <p class="verfoot" id="verfoot"></p>
 </main>
 
 <div class="tip" id="tip"></div>
@@ -285,6 +300,11 @@
 <div class="modal" id="modal"><div class="box"><p id="mText"></p><div class="btns" style="justify-content:flex-end"><button class="b" id="mNo">Annuler</button><button class="b p" id="mYes">Confirmer</button></div></div></div>
 
 <script>
+/* ===== VERSION : à augmenter à chaque mise à jour ===== */
+const APP_VERSION = '1.0';
+const APP_DATE = '07/11/2026';
+const APP_NOTES = 'Saisie mensuelle, comparaison avec l\'année précédente, prix de revient (hors Nutrisens, sans/avec boissons, total), cumul depuis janvier.';
+/* ====================================================== */
 const MONTHS = ['Janv.','Févr.','Mars','Avr.','Mai','Juin','Juil.','Août','Sept.','Oct.','Nov.','Déc.'];
 const MONTHS_L = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
 const KEY = 'suivi-depenses-familles-v8';
@@ -368,7 +388,17 @@ const meals = (m, yr=S.year) => (S.meals && S.meals[yr] && S.meals[yr][m]) || nu
 const setMeals = (m, yr, v) => { S.meals ||= {}; S.meals[yr] ||= Array(12).fill(null); S.meals[yr][m] = v; };
 const roleSum = (role, m, yr=S.year) => S.rows.filter(r=>r.role===role).reduce((s,r)=>s+val(r,m,yr),0);
 const hasRoles = () => S.rows.some(r=>r.role==='repas');
-const costMeal = (m, yr=S.year, drinks=false) => { const n=meals(m,yr); if (!n || !has(m,yr)) return null; return (roleSum('repas',m,yr) + (drinks?roleSum('boissons',m,yr):0)) / n; };
+/* mode: 'core' = hors boissons et hors sous-familles (ex. Nutrisens) · false = hors boissons · true = avec boissons */
+const coreSum = (m, yr=S.year) => S.rows.filter(r=>r.role==='repas').reduce((s,r)=>s+val(r.subs?virtOf(r):r,m,yr),0);
+const hasExcl = () => S.rows.some(r=>r.role==='repas' && r.subs && r.subs.length);
+const exclNames = () => S.rows.filter(r=>r.role==='repas' && r.subs).flatMap(r=>r.subs.map(x=>x.name||'sous-famille')).join(', ');
+const costNum = (m, yr, mode) => mode==='core' ? coreSum(m,yr) : mode==='all' ? monthTotal(m,yr) : roleSum('repas',m,yr) + (mode?roleSum('boissons',m,yr):0);
+/* cumul janvier → mois m : somme des dépenses ÷ somme des repas (mois ayant repas ET dépenses) */
+const costCum = (m, yr, mode) => { let num=0, n=0, k=0; for (let i=0;i<=m;i++){ const r=meals(i,yr); if (r && has(i,yr)) { num+=costNum(i,yr,mode); n+=r; k++; } } return n ? {v:num/n, k, n} : null; };
+const costMeal = (m, yr=S.year, drinks=false) => { const n=meals(m,yr); if (!n || !has(m,yr)) return null;
+  if (drinks==='core') return coreSum(m,yr)/n;
+  if (drinks==='all') return monthTotal(m,yr)/n;
+  return (roleSum('repas',m,yr) + (drinks?roleSum('boissons',m,yr):0)) / n; };
 const fmt2 = new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtInt = new Intl.NumberFormat('fr-FR',{maximumFractionDigits:0});
 
@@ -462,25 +492,41 @@ function drawRepas(){
   const nm = S.rows.filter(r=>r.role==='repas').map(r=>r.name).join(' + '), nb = S.rows.filter(r=>r.role==='boissons').map(r=>r.name).join(' + ');
   if (!hasRoles()){ $('rpSub').textContent=''; B.innerHTML = `<p class="empty">Pour calculer le coût par repas, indiquez dans <a href="#" class="goSetup">⚙ Mes familles</a> quelles familles comptent comme « repas » et « boissons », puis saisissez le nombre de repas chaque mois.</p>`;
     B.querySelector('.goSetup').onclick=e=>{ e.preventDefault(); openSetup(); }; return; }
-  $('rpSub').textContent = `Sans boissons = (${nm}) ÷ nombre de repas${nb?` · Avec boissons = on ajoute ${nb}`:''}`;
-  const tile = (label, v, v1, isInt, main) => {
+  const ex = hasExcl() ? exclNames() : '';
+  $('rpSub').textContent = (ex ? `Prix de revient = (${nm}) hors ${ex}, ÷ nombre de repas · ` : '') + `Sans boissons = (${nm}) ÷ repas${nb?` · Avec boissons = on ajoute ${nb}`:''} · Total = toutes les familles ÷ repas`;
+  const ytd = mode => { if (mode===undefined) return '';
+    const a=costCum(m,y,mode), b=costCum(m,y-1,mode); if (!a) return '';
+    const d = b && b.v ? (a.v-b.v)/b.v : null, c = d==null ? '' : d>0.0005 ? 'ytd-up' : d<-0.0005 ? 'ytd-down' : '';
+    return `<div class="ytd ${c}"><div class="yl">Depuis janvier</div><div class="yv">${fmt2.format(a.v)}${d!=null?` <span>${d>0.0005?'▲':d<-0.0005?'▼':'='} ${signP(d)}</span>`:''}</div>
+      <div class="ys">${b?`${y-1} même période : ${fmt2.format(b.v)}`:`${y-1} non saisi`}</div></div>`; };
+  const tile = (label, v, v1, isInt, main, mode) => {
     const f = isInt ? (x=>fmtInt.format(x)) : (x=>fmt2.format(x));
     const d = v!=null && v1 ? (v-v1)/v1 : null;
     return `<div class="rpt ${main?'main':''}"><div class="l">${label}</div><div class="v">${v!=null?f(v):'–'}</div>
-      <div class="n">${v1!=null?`${ML(m,y-1)} : ${f(v1)}${d!=null?` · <span class="${isInt?'':cls(d)}">${signP(d)}</span>`:''}`:`${ML(m,y-1)} non saisi`}</div></div>`; };
-  let h = `<div class="rptiles">
-    ${tile('Coût par repas sans boissons', costMeal(m), costMeal(m,y-1), false, true)}
-    ${tile('Coût par repas avec boissons', costMeal(m,y,true), costMeal(m,y-1,true), false)}
+      <div class="n">${v1!=null?`${ML(m,y-1)} : ${f(v1)}${d!=null?` · <span class="${isInt?'':cls(d)}">${signP(d)}</span>`:''}`:`${ML(m,y-1)} non saisi`}</div>${ytd(mode)}</div>`; };
+  let h = `<div class="rptiles" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">
+    ${ex ? tile(`Prix de revient hors boissons, hors ${esc(ex)}`, costMeal(m,y,'core'), costMeal(m,y-1,'core'), false, true, 'core') : ''}
+    ${tile(ex ? `Coût par repas sans boissons (avec ${esc(ex)})` : 'Coût par repas sans boissons', costMeal(m), costMeal(m,y-1), false, !ex, false)}
+    ${tile('Coût par repas avec boissons', costMeal(m,y,true), costMeal(m,y-1,true), false, false, true)}
+    ${tile('Prix de revient total (toutes familles)', costMeal(m,y,'all'), costMeal(m,y-1,'all'), false, false, 'all')}
     ${tile('Nombre de repas', meals(m), meals(m,y-1), true)}
   </div>`;
+  { const modes = [...(ex?[['core',`Hors boissons, hors ${esc(ex)}`]]:[]), [false,'Sans boissons'+(ex?` (avec ${esc(ex)})`:'')], [true,'Avec boissons'], ['all','Total (toutes familles)']];
+    const per = `janv. → ${MONTHS[m].toLowerCase()}`;
+    h += `<div class="cumbox"><div class="cumt">Depuis le début de l'année <span>(${per} ${y}, comparé à ${per} ${y-1})</span></div><table class="cum"><thead><tr><th>Prix de revient cumulé</th><th>${y}</th><th>${y-1}</th><th>Écart</th><th>%</th></tr></thead><tbody>` +
+      modes.map(([md,lab],i)=>{ const a=costCum(m,y,md), b=costCum(m,y-1,md); const d=a&&b? a.v-b.v : null;
+        return `<tr${i===0?' class="hl1"':''}><td>${i===0?'<b>'+lab+'</b>':lab}</td><td>${a?(i===0?'<b>'+fmt2.format(a.v)+'</b>':fmt2.format(a.v)):'–'}</td><td>${b?fmt2.format(b.v):'–'}</td><td class="${d!=null?cls(d):''}">${d!=null?(d>0?'+':d<0?'−':'')+fmt2.format(Math.abs(d)):'–'}</td><td class="${d!=null?cls(d):''}">${d!=null&&b.v?signP(d/b.v):'–'}</td></tr>`; }).join('') +
+      `</tbody></table>${(()=>{ const a=costCum(m,y,'all'), b=costCum(m,y-1,'all'); return `<p class="hint" style="margin:6px 0 0">${a?`${y} : ${a.k} mois, ${fmtInt.format(a.n)} repas`:''}${b?` · ${y-1} : ${b.k} mois, ${fmtInt.format(b.n)} repas`:''}${a&&b&&a.k!==b.k?' — attention, pas le même nombre de mois saisis':''}</p>`; })()}</div>`; }
   if (!meals(m)) h += `<p class="hint" style="margin:-4px 0 12px">Nombre de repas de ${ML(m,y)} non saisi : ajoutez-le dans « Saisie du mois ».</p>`;
   const cell = (v, v1, i, f, colorize) => { if (v==null) return `<td class="${i===m?'sel':''}"><span class="a" style="color:var(--muted)">–</span></td>`;
     const d = v1 ? (v-v1)/v1 : null;
     return `<td class="${i===m?'sel':''}"><span class="a">${f(v)}</span>${d!=null?`<span class="d ${colorize?cls(d):''}">${d>0.0001?'▲':d<-0.0001?'▼':'='} ${signP(d)}</span>`:''}</td>`; };
   const row = (label, fn, f, colorize) => `<tr><td>${label}</td>${MONTHS.map((_,i)=>cell(fn(i,y), fn(i,y-1), i, f, colorize)).join('')}</tr>`;
   h += `<div class="scroll"><table class="mx"><thead><tr><th>${y} <span style="font-weight:400;text-transform:none">(variation vs ${y-1})</span></th>${MONTHS.map((n,i)=>`<th class="${i===m?'sel':''}">${n}</th>`).join('')}</tr></thead><tbody>
-    ${row('<b>Coût / repas sans boissons</b>', (i,yr)=>costMeal(i,yr), x=>fmt2.format(x), true)}
+    ${ex ? row(`<b>Prix de revient hors boissons, hors ${esc(ex)}</b>`, (i,yr)=>costMeal(i,yr,'core'), x=>fmt2.format(x), true) : ''}
+    ${row(ex ? 'Coût / repas sans boissons' : '<b>Coût / repas sans boissons</b>', (i,yr)=>costMeal(i,yr), x=>fmt2.format(x), true)}
     ${row('Coût / repas avec boissons', (i,yr)=>costMeal(i,yr,true), x=>fmt2.format(x), true)}
+    ${row('Prix de revient total', (i,yr)=>costMeal(i,yr,'all'), x=>fmt2.format(x), true)}
     ${row('Nombre de repas', (i,yr)=>meals(i,yr), x=>fmtInt.format(x), false)}
   </tbody></table></div>`;
   B.innerHTML = h;
@@ -683,7 +729,8 @@ function qCalc(){
   const total = S.rows.reduce((s,r)=>s+(V.get(r)||0),0), filled=[...V.values()].some(v=>v!=null);
   const Y = has(Q.m,Q.y-1) ? monthTotal(Q.m,Q.y-1) : null;
   const nM = qMealsVal(), rep = S.rows.filter(r=>r.role==='repas').reduce((s,r)=>s+(V.get(r)||0),0), drk = S.rows.filter(r=>r.role==='boissons').reduce((s,r)=>s+(V.get(r)||0),0);
-  const cm = nM ? ` · Coût / repas : <b>${fmt2.format(rep/nM)}</b> sans boissons, <b>${fmt2.format((rep+drk)/nM)}</b> avec` : '';
+  const core = S.rows.filter(r=>r.role==='repas').reduce((s,r)=>s+(V.get(r)||0)-(r.subs?r.subs.reduce((a,x)=>a+(V.get(x)||0),0):0),0);
+  const cm = nM ? ` · ${hasExcl()?`Prix de revient : <b>${fmt2.format(core/nM)}</b> hors boissons et ${esc(exclNames())} · `:''}Coût / repas : <b>${fmt2.format(rep/nM)}</b> sans boissons, <b>${fmt2.format((rep+drk)/nM)}</b> avec · Total : <b>${fmt2.format(total/nM)}</b>` : '';
   $('qSum').innerHTML = filled ? `Total du mois : <b>${fmt.format(total)}</b>${Y?` · vs ${ML(Q.m,Q.y-1)} : <span class="${cls(total-Y)}">${signE(total-Y)} (${signP((total-Y)/Y)})</span>`:''}${cm}` : 'Aucun montant saisi pour ce mois.';
 }
 $('qM').onchange=e=>{ Q.m=+e.target.value; drawQuick(); };
@@ -774,12 +821,18 @@ $('copy').onclick=async()=>{
   entries().forEach(e=>lines.push([(e.lvl?'    ':'')+e.o.name, ...MONTHS.map((_,i)=>{ const raw = has(i)?val(e.o,i):null; return raw!=null?c(raw):''; }), c(yearTot(e.o))].join('\t')));
   lines.push(['Total',...MONTHS.map((_,i)=>c(monthTotal(i))), c(S.rows.reduce((s,r)=>s+yearTot(r),0))].join('\t'));
   if (hasRoles()) { lines.push(['Nombre de repas',...MONTHS.map((_,i)=>meals(i)??'')].join('\t'));
+    if (hasExcl()) lines.push([`Prix de revient hors boissons, hors ${exclNames()}`,...MONTHS.map((_,i)=>{ const c=costMeal(i,S.year,'core'); return c!=null?c.toFixed(2).replace('.',','):''; })].join('\t'));
     lines.push(['Coût / repas sans boissons',...MONTHS.map((_,i)=>{ const c=costMeal(i); return c!=null?c.toFixed(2).replace('.',','):''; })].join('\t'));
+    lines.push(['Prix de revient total',...MONTHS.map((_,i)=>{ const c=costMeal(i,S.year,'all'); return c!=null?c.toFixed(2).replace('.',','):''; })].join('\t'));
     lines.push(['Coût / repas avec boissons',...MONTHS.map((_,i)=>{ const c=costMeal(i,S.year,true); return c!=null?c.toFixed(2).replace('.',','):''; })].join('\t')); }
   try{ await navigator.clipboard.writeText(lines.join('\n')); toast('Tableau copié : collez-le dans Excel'); }catch(e){ toast('Copie refusée par le navigateur'); }
 };
 let rz; addEventListener('resize',()=>{ clearTimeout(rz); rz=setTimeout(()=>{ drawChartMonths(); drawChartFam(); drawChartOne(); },150); });
 
+$('ver').textContent = 'v' + APP_VERSION;
+$('ver').title = `Version ${APP_VERSION} du ${APP_DATE} — ${APP_NOTES}`;
+$('verfoot').textContent = `Suivi des dépenses · version ${APP_VERSION} du ${APP_DATE}`;
+document.title = `Suivi mensuel des dépenses par famille`;
 renderAll();
 if (firstRun) openSetup();
 </script>
