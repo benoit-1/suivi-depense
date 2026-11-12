@@ -1,0 +1,16 @@
+{
+  "name": "Suivi pellets",
+  "short_name": "Pellets",
+  "description": "Notez vos chargements de pellets et vos températures, et voyez combien vous consommez selon le froid.",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#eef0f3",
+  "theme_color": "#d9611a",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
