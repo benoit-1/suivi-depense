@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Suivi pellets, version 5.23 du 9 novembre 2026 -->
+<!-- Suivi pellets, version 5.41 du 9 novembre 2026 -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -410,6 +410,162 @@ html.anim-off .palette .neuf{animation:none}
 .card.cible{animation:cible 1.6s ease}@keyframes cible{0%,60%{box-shadow:0 0 0 3px var(--accent,#d9611a)}100%{box-shadow:none}}
 #stock,#hiver-dernier{scroll-margin-top:calc(env(safe-area-inset-top,0px) + 12px)}
 
+/* v5.24 : feuille façon iPhone (HIG : poignée, barre Annuler / titre / action) */
+.feuille-fond{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,0);display:flex;align-items:flex-end;justify-content:center;transition:background .28s ease}
+.feuille-fond.ouverte{background:rgba(0,0,0,.35)}
+.feuille{width:100%;max-width:520px;background:var(--surface);color:var(--ink);border-radius:14px 14px 0 0;padding:6px 16px calc(env(safe-area-inset-bottom,0px) + 18px);box-shadow:0 -8px 30px rgba(0,0,0,.18);transform:translateY(100%);transition:transform .3s cubic-bezier(.2,.8,.2,1);margin:0}
+.feuille-fond.ouverte .feuille{transform:none}
+.poignee{width:36px;height:5px;border-radius:3px;background:var(--line);margin:4px auto 6px}
+.feuille-barre{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;min-height:44px;margin-bottom:6px}
+.feuille-barre b{font-size:17px;font-weight:600}
+.feuille-barre button{background:none;border:0;color:var(--accent);font-size:17px;min-height:44px;padding:0 4px;cursor:pointer}
+.feuille-barre .f-annuler{justify-self:start}
+.feuille-barre .f-ok{justify-self:end;font-weight:600}
+.feuille-corps .f{display:block;margin:10px 0}
+.feuille-corps input{font-size:17px}
+.feuille .opt{color:var(--muted);font-weight:400;font-size:13px}
+.puces{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 6px}
+.puces button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:8px 12px;font-size:15px;min-height:36px;cursor:pointer}
+.deux-btn{display:flex;gap:8px;margin-top:10px}
+.deux-btn button{flex:1;min-height:44px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--accent);font-weight:600;font-size:15px;cursor:pointer}
+.stock-ligne{font-size:17px;margin:4px 0}
+@media (prefers-reduced-motion:reduce){.feuille,.feuille-fond{transition:none}}
+
+/* v5.25 : stock en une ligne (façon réglage iPhone), détail dans la petite fenêtre */
+.ligne-stock{display:flex;align-items:center;gap:12px;width:100%;margin:10px 0 0;padding:10px 14px;min-height:56px;border:0;border-radius:14px;background:var(--surface);color:var(--ink);text-align:left;box-shadow:0 1px 3px rgba(0,0,0,.06);cursor:pointer;font:inherit}
+.ligne-stock .ls-ic{font-size:22px}
+.ligne-stock .ls-txt{flex:1;display:flex;flex-direction:column}
+.ligne-stock .ls-txt b{font-size:17px;font-weight:600}
+.ligne-stock .ls-txt small{font-size:14px;color:var(--muted)}
+.ligne-stock .ls-chev{font-size:24px;color:var(--muted);line-height:1}
+.ligne-stock.alerte{box-shadow:inset 0 0 0 2px #e8833a}
+.ligne-stock.alerte small{color:#b5530f;font-weight:600}
+.ligne-stock:active{opacity:.7}
+.fd-chiffre{font-size:40px;font-weight:800;line-height:1.1;margin:0 0 4px}
+.fd-chiffre small{font-size:18px;font-weight:600;color:var(--muted)}
+.feuille-corps p{margin:4px 0}
+.fd-liste{margin-top:12px}
+
+/* v5.26 : la petite barre grise invite à glisser */
+.feuille .poignee{cursor:grab;touch-action:none}
+.feuille-barre{touch-action:none}
+
+/* v5.27 : la flamme de « Sacs consommés » utilise la même vraie vidéo que l'ouverture ; le dessin reste en secours */
+.t.sacs .flame{position:relative}
+.fv-boite{position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);width:calc(104px * var(--fl,1));height:calc(124px * var(--fl,1));pointer-events:none;opacity:0;mix-blend-mode:screen;transition:opacity .6s ease,width .6s ease,height .6s ease;
+  -webkit-mask-image:radial-gradient(ellipse 52% 58% at 50% 72%,#000 55%,transparent 100%);mask-image:radial-gradient(ellipse 52% 58% at 50% 72%,#000 55%,transparent 100%)}
+.fv{width:100%;height:100%;object-fit:cover;object-position:50% 100%;display:block;filter:saturate(1.3) brightness(1.25)}
+html.fv-ok .fv-boite{opacity:1}
+html.fv-ok .t.sacs .poele{opacity:0}
+.t.sacs .poele{transition:opacity .6s ease,width .6s ease}
+.t.sacs .flame:has(.poele.boost) .fv-boite{animation:fvboost 2.3s ease-out}
+@keyframes fvboost{0%{transform:translateX(-50%) scale(1)}25%{transform:translateX(-50%) scale(1.35)}100%{transform:translateX(-50%) scale(1)}}
+html.anim-off .fv-boite{display:none}
+html.anim-off .t.sacs .poele{opacity:1!important}
+html.fv-ok .t.sacs .flame{mix-blend-mode:screen}
+
+/* v5.28 : ligne « Faire connaître l'application » avec mini QR */
+.ligne-partage{margin-top:14px}
+.lp-qr{width:44px;height:44px;flex:0 0 44px;background:#fff;border-radius:8px;padding:3px;box-sizing:border-box;display:block}
+.lp-qr svg{width:100%;height:100%;display:block}
+.fp-qr{width:220px;height:220px;margin:6px auto 10px;background:#fff;border-radius:16px;padding:10px;box-sizing:border-box}
+.fp-qr svg{width:100%;height:100%;display:block}
+.fp-txt{text-align:center;color:var(--muted);font-size:15px;margin:0 8px 12px}
+.fp-btn{display:block;width:100%;min-height:50px;border:0;border-radius:12px;background:var(--accent);color:var(--accent-ink);font-weight:600;font-size:17px;cursor:pointer}
+
+.fp-qr{margin-bottom:16px}
+
+/* v5.30 : choix B de Benoît : la vraie flamme en fond de toute la tuile « Sacs consommés » (seulement quand la vidéo tourne ; sinon l'ancien dessin) */
+html.fv-ok:not(.anim-off) .t.sacs{position:relative;overflow:hidden;background:#0b0604;min-height:132px}
+html.fv-ok:not(.anim-off) .t.sacs>*{position:relative;z-index:1}
+html.fv-ok:not(.anim-off) .t.sacs .flame{position:absolute!important;inset:0;z-index:0;mix-blend-mode:normal;animation:none!important;min-height:0;display:block}
+html.fv-ok:not(.anim-off) .t.sacs .fv-boite{left:0;right:0;top:0;bottom:0;width:auto;height:auto;transform:none;mix-blend-mode:normal;
+  -webkit-mask-image:linear-gradient(90deg,rgba(0,0,0,.35) 0%,rgba(0,0,0,.8) 40%,#000 65%);mask-image:linear-gradient(90deg,rgba(0,0,0,.35) 0%,rgba(0,0,0,.8) 40%,#000 65%);
+  opacity:min(1,calc(.45 + .45 * var(--fl,1)))}
+html.fv-ok:not(.anim-off) .t.sacs .fv{object-fit:cover;object-position:70% 100%;filter:saturate(1.15)}
+html.fv-ok:not(.anim-off) .t.sacs>:not(.flame){text-shadow:0 1px 10px rgba(0,0,0,.75)}
+html.fv-ok:not(.anim-off) .t.sacs .flame:has(.poele.boost) .fv-boite{animation:fvbrille 2.3s ease-out}
+@keyframes fvbrille{0%{filter:none}25%{filter:brightness(1.6)}100%{filter:none}}
+
+/* v5.33 : visite guidée + premiers pas */
+.visite{position:fixed;inset:0;z-index:95;opacity:0;transition:opacity .3s}
+.visite.on{opacity:1}
+.vi-trou{position:fixed;border-radius:18px;box-shadow:0 0 0 9999px rgba(10,8,6,.62);transition:all .45s cubic-bezier(.3,.8,.3,1);pointer-events:none}
+.vi-main{position:fixed;font-size:34px;pointer-events:none;transition:left .45s,top .45s;animation:vitape 1.1s ease-in-out infinite;filter:drop-shadow(0 3px 6px rgba(0,0,0,.4))}
+@keyframes vitape{0%,100%{transform:translateY(0) scale(1)}45%{transform:translateY(8px) scale(.9)}}
+.vi-bulle{position:fixed;background:var(--surface);color:var(--ink);border-radius:16px;padding:14px 16px 12px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.vi-bulle.pop{animation:vipop .35s cubic-bezier(.3,1.4,.5,1)}
+@keyframes vipop{from{transform:scale(.85);opacity:0}to{transform:none;opacity:1}}
+.vi-pas{font-size:12px;color:var(--muted);margin-bottom:2px}
+.vi-titre{font-size:17px;display:block;margin-bottom:4px}
+.vi-txt{margin:0 0 10px;font-size:15px;line-height:1.4}
+.vi-btns{display:flex;justify-content:space-between;gap:10px}
+.vi-btns button{min-height:44px;border-radius:12px;border:0;font-size:16px;cursor:pointer;padding:0 16px}
+.vi-passer{background:none;color:var(--muted)}
+.vi-suite{background:var(--accent);color:var(--accent-ink,#fff);font-weight:600}
+.pp .pp-tete{display:flex;justify-content:space-between;align-items:center}
+.pp-x{background:none;border:0;font-size:24px;color:var(--muted);min-width:44px;min-height:44px;cursor:pointer}
+.pp-msg{font-size:16px;margin:4px 0 10px}
+.pp-barre{height:10px;border-radius:5px;background:var(--line);overflow:hidden}
+.pp-barre i{display:block;height:100%;background:linear-gradient(90deg,#f2b134,#d9611a);border-radius:5px;transition:width .6s}
+.pp-liste{list-style:none;padding:0;margin:10px 0 4px}
+.pp-liste li{display:flex;align-items:center;gap:10px;padding:5px 0;color:var(--muted)}
+.pp-liste li span{width:24px;height:24px;border-radius:50%;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700}
+.pp-liste li.ok{color:var(--ink)}
+.pp-liste li.ok span{background:#2f8f5b;border-color:#2f8f5b;color:#fff}
+.pret{position:fixed;inset:0;z-index:96;background:rgba(10,8,6,.55);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;transition:opacity .3s}
+.pret.on{opacity:1}
+.pret-carte{position:relative;background:var(--surface);color:var(--ink);border-radius:20px;padding:24px 20px 18px;max-width:360px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.35);animation:vipop .45s cubic-bezier(.3,1.4,.5,1)}
+.pret-ico{font-size:52px;animation:vitape 1.2s ease-in-out infinite}
+.pret-carte h2{margin:6px 0 8px;font-size:21px}
+.pret-carte p{margin:0 0 16px;font-size:15px;line-height:1.45;color:var(--muted)}
+.pret-conf{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.pret-conf i{position:absolute;left:var(--x);top:-12px;width:8px;height:14px;background:var(--c);border-radius:2px;animation:conf 2.6s ease-in var(--d) forwards}
+@keyframes conf{to{transform:translateY(110vh) rotate(720deg)}}
+@media (prefers-reduced-motion:reduce){.vi-main,.pret-ico,.pret-conf{animation:none}.vi-trou{transition:none}}
+
+/* v5.35 : écran de confirmation après un enregistrement */
+.ok-ecran{position:fixed;inset:0;z-index:94;display:flex;align-items:center;justify-content:center;background:rgba(10,8,6,.35);opacity:0;transition:opacity .25s}
+.ok-ecran.on{opacity:1}
+.ok-carte{background:var(--surface);color:var(--ink);border-radius:22px;padding:24px 28px;min-width:230px;max-width:320px;text-align:center;box-shadow:0 16px 40px rgba(0,0,0,.3);display:flex;flex-direction:column;align-items:center;gap:6px;transform:scale(.85);transition:transform .35s cubic-bezier(.3,1.4,.5,1)}
+.ok-ecran.on .ok-carte{transform:none}
+.ok-rond{width:72px;height:72px;border-radius:50%;background:#e7f6ec;display:flex;align-items:center;justify-content:center;font-size:38px;margin-bottom:4px;animation:okpop .5s cubic-bezier(.3,1.6,.5,1) .1s both}
+@keyframes okpop{from{transform:scale(0)}to{transform:none}}
+.ok-carte b{font-size:20px}
+.ok-carte span{font-size:15px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){.ok-rond{animation:none}.ok-carte{transition:none}}
+
+/* v5.37 : bouton Installer + guide animé */
+.install-btn{background:#1d1d1f!important;color:#fff!important}
+.ou-sep{text-align:center;color:var(--muted);font-size:14px;margin:8px 0}
+.gi-liste{list-style:none;padding:0;margin:4px 0 10px}
+.gi-liste li{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line);opacity:0;animation:gientre .45s ease forwards;animation-delay:calc(var(--i)*.5s + .2s)}
+.gi-liste li:last-child{border-bottom:0}
+@keyframes gientre{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.gi-num{flex:0 0 30px;height:30px;border-radius:50%;background:var(--accent);color:var(--accent-ink,#fff);font-weight:700;display:flex;align-items:center;justify-content:center}
+.gi-txt{font-size:16px;line-height:1.4}
+.gi-dessin{display:block;margin-top:8px}
+.gi-ico{display:inline-flex;width:44px;height:44px;border-radius:12px;background:var(--bg);align-items:center;justify-content:center;animation:gipulse 1.4s ease-in-out infinite}
+@keyframes gipulse{0%,100%{box-shadow:0 0 0 0 rgba(10,132,255,.45)}50%{box-shadow:0 0 0 8px rgba(10,132,255,0)}}
+.gi-ligne{display:inline-flex;gap:10px;align-items:center;background:var(--bg);border-radius:10px;padding:8px 12px;font-size:15px}
+.gi-ajout{display:inline-block;color:#0a84ff;font-weight:600;background:var(--bg);border-radius:10px;padding:6px 12px}
+.gi-fleche{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 6px);transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;color:#fff;font-size:26px;font-weight:700;z-index:91;pointer-events:none;animation:gibas 1.1s ease-in-out infinite;text-shadow:0 2px 8px rgba(0,0,0,.6)}
+.gi-fleche svg{background:#fff;border-radius:12px;padding:6px;width:40px;height:40px;box-shadow:0 4px 14px rgba(0,0,0,.35)}
+@keyframes gibas{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,8px)}}
+.feuille-fond:has(.gi-fleche) .feuille{margin-bottom:84px;border-radius:14px}
+@media (prefers-reduced-motion:reduce){.gi-liste li{animation:none;opacity:1}.gi-ico,.gi-fleche{animation:none}}
+
+/* v5.38 : bouton pour quitter la visite, toujours visible */
+.vi-quitter{position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);right:12px;background:rgba(255,255,255,.92);color:#1d1d1f;border:0;border-radius:999px;padding:10px 16px;font-size:15px;font-weight:600;min-height:44px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.vi-bulle{max-height:calc(100vh - 24px);overflow:auto}
+
+/* v5.39 : étapes des Premiers pas cliquables */
+.pp-liste li .pp-go{display:flex;align-items:center;gap:10px;width:100%;background:none;border:0;padding:4px 0;min-height:44px;font:inherit;color:var(--accent);font-weight:600;text-align:left;cursor:pointer}
+.pp-liste li .pp-go span{width:24px;height:24px;border-radius:50%;border:2px solid var(--accent);flex:0 0 24px}
+.pp-liste li .pp-go em{flex:1;font-style:normal}
+.pp-liste li .pp-go b{font-size:22px;line-height:1}
+.pp-liste li .pp-go:active{opacity:.6}
+
 </style>
 </head>
 <body>
@@ -430,7 +586,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
    L'interface ne parle qu'à « Store » (données) et « Meteo » (météo).
    Données : un fichier JSON dans un dépôt GitHub privé. Météo : Open-Meteo.
    ================================================================== */
-var VERSION='5.23', VERSION_DATE='11 novembre 2026';
+var VERSION='5.41', VERSION_DATE='11 novembre 2026';
 var DEMO=false;
 var BANDS=[{lab:'Moins de 0 °C',lo:-99,hi:0},{lab:'0 à 5 °C',lo:0,hi:5},{lab:'5 à 10 °C',lo:5,hi:10},{lab:'10 à 15 °C',lo:10,hi:15},{lab:'15 °C et plus',lo:15,hi:99}];
 var EXT_SOURCES=[
@@ -527,7 +683,13 @@ var LOCALKEY='suivi-pellets-local';
 var COMPTEUR='suivi-pellets'; // code GoatCounter, ex. 'suivi-pellets' → https://suivi-pellets.goatcounter.com
 function statistique(evt){try{if(!COMPTEUR||(cfg&&cfg.stats==='off'))return;var img=new Image();img.referrerPolicy='no-referrer';
   img.src='https://'+COMPTEUR+'.goatcounter.com/count?p=%2F'+encodeURIComponent(evt)+'&t='+encodeURIComponent(evt)+'&e=true&rnd='+Math.random().toString(36).slice(2)}catch(e){}}
-function statsDuJour(){try{if(!localStorage.getItem('suivi-stat-appareil')){localStorage.setItem('suivi-stat-appareil','1');statistique('nouvel-appareil');statistique(estLocal()?'mode-sans-compte':'mode-github')}
+
+// v5.31 : d'où viennent les nouveaux utilisateurs (QR montré de la main à la main, lien envoyé, Facebook, ou adresse tapée)
+(function(){try{var q=location.search||'';if(!q)return;var m=q.match(/[?&]via=(qr|lien)\b/),src=m?m[1]:(/[?&](fb=|fbclid=)/.test(q)?'facebook':null);
+  if(src&&!localStorage.getItem('suivi-stat-appareil')&&!localStorage.getItem('suivi-via'))localStorage.setItem('suivi-via',src);
+  if(!/[?&]connexion=/.test(q)&&history.replaceState){var n=q.replace(/[?&](via|fb|fbclid)=[^&]*/g,'').replace(/^&/,'?');if(n==='?')n='';if(n!==q)history.replaceState(null,'',location.pathname+n+location.hash)}}catch(e){}})();
+function sourceArrivee(){try{return localStorage.getItem('suivi-via')||'direct'}catch(e){return 'direct'}}
+function statsDuJour(){try{if(!localStorage.getItem('suivi-stat-appareil')){localStorage.setItem('suivi-stat-appareil','1');statistique('nouvel-appareil');statistique(estLocal()?'mode-sans-compte':'mode-github');statistique('arrivee/'+sourceArrivee())}
   var j=ymd(new Date());if(localStorage.getItem('suivi-stat-jour')!==j){localStorage.setItem('suivi-stat-jour',j);statistique('appareil-actif-du-jour')}
   statsVisite()}catch(e){}}
 // v5.9 : chaque appareil a un numéro au hasard (4 caractères, rien de personnel) ; une visite = une ouverture (au plus 1 par 30 min)
@@ -537,7 +699,7 @@ document.addEventListener('visibilitychange',function(){if(document.visibilitySt
 function estLocal(){return !!(cfg&&cfg.local)}
 function cacher(pending){if(estLocal())return;lsSet(CACHEKEY,{cfgId:cfgId(),data:donnees(),sha:sha,pending:!!pending})}
 function enregistrer(msg){
-  if(estLocal()){try{localStorage.setItem(LOCALKEY,JSON.stringify(donnees()));setStatus('ok','Enregistré sur cet appareil')}catch(e){setStatus('err','Mémoire pleine : faites une sauvegarde')}return Promise.resolve()}
+  if(estLocal()){try{localStorage.setItem(LOCALKEY,JSON.stringify(donnees()));setStatus('ok','Enregistré sur cet appareil');garderSaisiesDansAdresse()}catch(e){setStatus('err','Mémoire pleine : faites une sauvegarde')}return Promise.resolve()}
   cacher(true);
   if(enCours){attente=msg;return Promise.resolve()}
   enCours=true;essais=0;setStatus('busy','Enregistrement…');
@@ -570,6 +732,29 @@ function blocInstall(){if(estInstallee())return '';
   if(estIOS())return '<p class="hint install-ios">📲 <b>Pour l’installer sur l’iPhone :</b> touchez <b>Partager</b> (le carré avec une flèche) en bas de Safari, puis <b>Sur l’écran d’accueil</b>, puis <b>Ajouter</b>.</p>';
   return '<p class="hint">📲 Pour l’installer : menu du navigateur, puis « Installer l’application » ou « Ajouter à l’écran d’accueil ».</p>'}
 if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}
+// v5.37 : gros bouton « Installer » en premier sur l'écran de bienvenue ; sur iPhone et Mac, il ouvre un guide animé (Apple n'autorise pas l'installation automatique)
+function boutonInstall(){if(estInstallee())return '';return '<button class="primary big install-btn" data-a="installer">📲 Installer sur mon écran d’accueil</button><div class="ou-sep">ou</div>'}
+var SVG_PARTAGE='<svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5" fill="none" stroke="#0a84ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 10H6a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1h-2" fill="none" stroke="#0a84ff" stroke-width="2" stroke-linecap="round"/></svg>';
+var SVG_PLUS='<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+function guideInstall(){fermerFeuille();var ios=estIOS(),mac=!ios&&/Macintosh/.test(navigator.userAgent)&&/Safari/.test(navigator.userAgent)&&!/Chrome|CriOS|Edg/.test(navigator.userAgent);
+  var et=ios?[
+    ['1','Touchez le bouton <b>Partager</b>, en bas de l’écran de Safari (s’il n’apparaît pas, touchez d’abord <b>···</b>)',' <span class="gi-ico">'+SVG_PARTAGE+'</span>'],
+    ['2','Faites glisser vers le haut, puis touchez <b>Sur l’écran d’accueil</b>',' <span class="gi-ligne">'+SVG_PLUS+' Sur l’écran d’accueil</span>'],
+    ['3','Touchez <b>Ajouter</b>, en haut à droite','<span class="gi-ajout">Ajouter</span>']]
+   :mac?[
+    ['1','Dans la barre de menus, cliquez sur <b>Fichier</b>',''],
+    ['2','Cliquez sur <b>Ajouter au Dock…</b>',''],
+    ['3','Cliquez sur <b>Ajouter</b> : l’icône apparaît dans le Dock','<span class="gi-ajout">Ajouter</span>']]
+   :[['1','Ouvrez le <b>menu</b> du navigateur (les trois points ⋮)',''],
+     ['2','Choisissez <b>Installer l’application</b> ou <b>Ajouter à l’écran d’accueil</b>',''],
+     ['3','Confirmez avec <b>Installer</b>','<span class="gi-ajout">Installer</span>']];
+  var c='<ol class="gi-liste">'+et.map(function(e,i){return '<li style="--i:'+i+'"><span class="gi-num">'+e[0]+'</span><span class="gi-txt">'+e[1]+(e[2]?'<span class="gi-dessin">'+e[2]+'</span>':'')+'</span></li>'}).join('')+'</ol>'+
+    '<p class="hint">Ensuite, ouvrez Suivi pellets avec sa nouvelle icône 🔥, comme une vraie application.'+(estLocal()&&S&&S.foyer?' <b>Vos saisies déjà faites seront reprises automatiquement.</b>':'')+'</p>';
+  var o=document.createElement('div');o.className='feuille-fond';
+  o.innerHTML='<div class="feuille" role="dialog" aria-modal="true"><div class="poignee" aria-hidden="true"></div><div class="feuille-barre"><span></span><b>Installer l’application</b><button type="button" class="f-ok f-fermer">OK</button></div><div class="feuille-corps">'+c+'</div></div>'+
+    (ios?'<div class="gi-fleche" aria-hidden="true">'+SVG_PARTAGE+'<span>↓</span></div>':'');
+  document.body.appendChild(o);ameliorerFeuille(o);requestAnimationFrame(function(){o.classList.add('ouverte')});statistique('guide-installation');
+  o.addEventListener('click',function(ev){if(ev.target===o||ev.target.closest('.f-fermer'))fermerFeuille()})}
 function estInstallee(){try{return window.navigator.standalone===true||window.matchMedia('(display-mode: standalone)').matches}catch(e){return false}}
 function lireInvitation(){
   var mm=/[?&]connexion=([^&#]+)/.exec(location.search||'')||/(?:^#|&)connexion=([^&]+)/.exec(location.hash||'');if(!mm)return null; // v4.1 : ?connexion= (nouveau) ou #connexion= (anciens liens)
@@ -584,6 +769,20 @@ function ecranHash(){var h=(location.hash||'').replace('#','').split('&')[0];ret
 function garderConnexionDansAdresse(){try{if(estInstallee()||!cfg||!cfg.token||cfg.local)return;
   var cible=location.pathname+'?connexion='+encodeURIComponent(codeConnexion())+'#'+ecranHash();
   if(location.pathname+location.search+location.hash!==cible)history.replaceState(null,'',cible)}catch(e){}}
+
+// v5.40 : sur iPhone/Mac, Safari et l'icône de l'écran d'accueil ont chacun leur propre mémoire.
+// Tant qu'on est dans Safari (sans compte), l'adresse transporte une copie des saisies (?transfert=…) ;
+// « Sur l'écran d'accueil » garde cette adresse, et l'icône reprend les saisies à sa première ouverture.
+function estApple(){try{return navigator.vendor==='Apple Computer, Inc.'}catch(e){return false}}
+function b64u(t){return btoa(unescape(encodeURIComponent(t))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+function deb64u(t){t=t.replace(/-/g,'+').replace(/_/g,'/');while(t.length%4)t+='=';return decodeURIComponent(escape(atob(t)))}
+function garderSaisiesDansAdresse(){try{if(!estLocal()||estInstallee()||!estApple()||!history.replaceState||!S)return;
+  var q=(location.search||'').replace(/[?&]transfert=[^&]*/g,'').replace(/^&/,'?');if(q==='?')q='';
+  if(S.foyer||(S.chargements&&S.chargements.length)){var d={version:2,foyer:S.foyer,chargements:S.chargements,releves:S.releves,supprimes:S.supprimes||[],meteo:{}};
+    q=(q?q+'&':'?')+'transfert='+b64u(JSON.stringify(d))}
+  var cible=location.pathname+q+location.hash;if(location.pathname+location.search+location.hash!==cible)history.replaceState(null,'',cible)}catch(e){}}
+function lireTransfert(){try{var m=/[?&]transfert=([^&#]+)/.exec(location.search||'');if(!m)return null;var d=JSON.parse(deb64u(m[1]));return d&&d.version?d:null}catch(e){return null}}
+function aDesSaisiesLocales(){try{var d=JSON.parse(localStorage.getItem(LOCALKEY)||'null');return !!(d&&(d.foyer||(d.chargements&&d.chargements.length)))}catch(e){return false}}
 
 /* météo Open-Meteo */
 function agreger(j){
@@ -636,13 +835,16 @@ function connecter(c){
 }
 function demarrerLocal(){
   mode='pret';var d=null;try{d=JSON.parse(localStorage.getItem(LOCALKEY)||'null')}catch(e){}
-  appliquer(d?migrer(d):vide());setStatus('ok','Enregistré sur cet appareil');statsDuJour();
+  appliquer(d?migrer(d):vide());setStatus('ok','Enregistré sur cet appareil');statsDuJour();garderSaisiesDansAdresse();
   try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}
   render();if(S.foyer)Meteo.actualiser().then(function(chg){if(chg)sauver();renderFond()});
 }
 function commencerLocal(){var old=lsGet(CFGKEY)||{};cfg={local:true,moi:old.moi||'',anim:old.anim,fetes:old.fetes};lsSet(CFGKEY,cfg);demarrerLocal()}
 function demarrer(){
   var inv=lireInvitation(),c0=lsGet(CFGKEY);
+  var tr=inv?null:lireTransfert();
+  if(tr&&(!c0||c0.local)&&!aDesSaisiesLocales()){try{localStorage.setItem(LOCALKEY,JSON.stringify(tr));c0=Object.assign({},c0||{},{local:true});lsSet(CFGKEY,c0);
+    lsPut('suivi-visite-vue','1');setTimeout(function(){toast('✅ Vos saisies ont été reprises dans l’application')},1500);statistique('transfert-ecran-accueil')}catch(e){}}
   if(inv&&!(c0&&c0.owner===inv.owner&&c0.repo===inv.repo&&c0.token===inv.token&&c0.path===inv.path)){lsDel(CACHEKEY);connecter(inv);return}
   if(c0&&c0.local&&!inv){cfg=c0;demarrerLocal();return}
   if(!c0||!c0.token){mode='connexion';render();return}
@@ -792,7 +994,7 @@ function vueBienvenue(){
   var c=cfg||{owner:'',repo:'suivi-chauffage-donnees',token:''},h='<div class="wrap hero">';
   h+='<div class="logo" aria-hidden="true">🔥</div><h1 class="big-title">Suivi pellets</h1><p class="lead">Notez vos chargements et vos températures, et découvrez combien vous consommez selon le froid.</p>';
   if(ui.err)h+='<p class="errbox">'+esc(ui.err)+'</p>';
-  h+='<section class="card left"><button class="primary big" data-a="local">🔥 Commencer</button><p class="hint">Gratuit, sans compte : vos relevés restent sur cet appareil.</p>'+blocInstall()+'</section>';
+  h+='<section class="card left">'+boutonInstall()+'<button class="primary big" data-a="local">🔥 Commencer</button>'+'</section>';
   // v3.8 : options GitHub repliées derrière « Options avancées »
   var avance=ui.avance||!!ui.err||!!(cfg&&cfg.owner);
   if(!avance){h+='<p class="avance"><button class="lnk" data-a="avance">Options avancées</button></p>';return h+'</div>'}
@@ -810,9 +1012,10 @@ function vueChargementDonnees(){return '<div class="wrap hero"><div class="logo"
 function vueFoyer(){
   return '<div class="wrap">'+entete('Votre foyer',false)+(ui.err?'<p class="errbox">'+esc(ui.err)+'</p>':'')+
   '<section class="card"><h2>Créer mon foyer</h2><p class="hint">Vous êtes le premier de la famille à l’utiliser.</p>'+
-  '<form id="fFoyer" class="stack"><label class="f">Commune<input id="ff-commune" name="commune" required placeholder="ex. Étaples" autocomplete="address-level2"></label>'+
-  '<label class="f">Code postal<input id="ff-cp" name="cp" required inputmode="numeric" placeholder="ex. 62630" autocomplete="postal-code"></label>'+
-  '<label class="f">Pièces (séparées par des virgules, celle du poêle en premier)<input id="ff-pieces" name="pieces" value="Salon"></label>'+
+  '<form id="fFoyer" class="stack"><label class="f">Commune<input id="ff-commune" name="commune" required placeholder="ex. Arras" autocomplete="address-level2"></label>'+
+  '<label class="f">Code postal<input id="ff-cp" name="cp" required inputmode="numeric" placeholder="ex. 62000" autocomplete="postal-code"></label>'+
+  '<label class="f">Pièces (séparées par des virgules, celle du poêle en premier)<input id="ff-pieces" name="pieces" value="Salon" placeholder="Salon, Chambre Pierre, Chambre maman"></label>'+
+  '<p class="hint" style="margin-top:-4px">Exemple : <b>Salon, Chambre Pierre, Chambre maman</b></p>'+
   '<button class="primary big" type="submit">Créer le foyer</button></form></section>'+
   (estLocal()?'<section class="card"><h2>J’ai déjà une sauvegarde</h2><p class="hint">Nouveau téléphone, ou relevés venant d’un autre appareil : choisissez le fichier de sauvegarde.</p><label class="filebtn2">📂 Restaurer un fichier de relevés<input type="file" id="f-import" accept=".json,application/json"></label></section>':'<p class="hint">Ces réglages sont communs à tout le foyer. Vous pourrez inviter la famille ensuite, depuis les Réglages.</p>')+'</div>';
 }
@@ -824,12 +1027,13 @@ function vueAccueil(){
   '<section class="big2" aria-label="Températures">'+
   '<div class="t ext"><span class="l">Dehors <span class="sky">'+cielIcone()+'</span></span><span class="v">'+(d.v!=null?'<span class="cnt" data-val="'+d.v+'" data-dec="1">'+nf(d.v,1)+'</span><small>°C</small>':'—')+'</span><span class="n">'+esc(d.note)+(cielTexte()?' · '+esc(cielTexte()):'')+'</span></div>'+
   '<div class="t int"><span class="l">Maison</span><span class="v">'+(mai!=null?'<span class="cnt" data-val="'+mai+'" data-dec="1">'+nf(mai,1)+'</span><small>°C</small>':'—')+'</span><span class="n">'+(dr?'moyenne de '+ni+' pièce'+(ni>1?'s':'')+' · '+quand(dr.t):'aucun relevé encore')+'</span></div>'+
-  '<div class="t sacs"><div><span class="l">Sacs consommés</span><div class="row-b"><span class="v cnt" id="compteur" data-val="'+A.total+'" data-dec="'+(A.total%1?1:0)+'">'+nf(A.total,A.total%1?1:0)+'</span><span class="n">'+(A.first?'depuis le '+fds(A.first.t):'cette saison')+'</span></div>'+(fl.txt?'<span class="n flt">'+fl.txt+'</span>':'')+'</div><span class="flame" aria-hidden="true" style="--fl:'+fl.k.toFixed(2)+'">'+svgPoele()+'</span></div></section>'+
-  ligneRemplissage(A)+lignePoele()+vueStock(A)+vuePalette(A)+vuePrevision(A)+vueAnDernier(A)+
+  '<div class="t sacs"><div><span class="l">Sacs consommés</span><div class="row-b"><span class="v cnt" id="compteur" data-val="'+A.total+'" data-dec="'+(A.total%1?1:0)+'">'+nf(A.total,A.total%1?1:0)+'</span><span class="n">'+(A.first?'depuis le '+fds(A.first.t):'cette saison')+'</span></div>'+(fl.txt?'<span class="n flt">'+fl.txt+'</span>':'')+'</div><span class="flame" aria-hidden="true" style="--fl:'+fl.k.toFixed(2)+'"><span class="fv-boite"><video class="fv" src="feu-tuile.mp4?v=1" muted autoplay loop playsinline webkit-playsinline preload="auto"></video></span>'+svgPoele()+'</span></div></section>'+
+  vuePremiersPas(A)+ligneRemplissage(A)+lignePoele()+vueStock(A)+vuePalette(A)+vuePrevision(A)+vueAnDernier(A)+
   '<section class="acts"><button class="act a1" data-go="temperatures"><span class="ic" aria-hidden="true">🌡️</span><span><b>Prendre les températures</b><span class="s">pièce par pièce, 30 secondes</span></span></button>'+
   '<button class="act a2" data-go="chargement"><span class="ic" aria-hidden="true">'+svgTas()+'</span><span><b>Chargement pellets</b><span class="s">noter les sacs versés</span></span></button></section>';
   if(A.last)h+='<p class="last">Dernier chargement : '+quand(A.last.t)+(A.last.par?' par '+esc(A.last.par):'')+'</p>';
   if(A.rate!=null)h+='<p class="last">En moyenne <b>'+nf(A.rate,2)+' sac par jour</b> cette saison</p>';
+  h+=lignePartage();
   if(estLocal()){var ds=cfg.sauvegarde,nb=S.chargements.length+S.releves.length;if(nb>=10&&(!ds||Date.now()-parseDT(ds)>30*864e5))h+='<button class="det rappel" data-go="reglages">💾 Pensez à sauvegarder vos relevés</button>'}
   if(feteDuJour())h+='<p class="last fete-msg">'+FETES[feteDuJour()].ico+' '+FETES[feteDuJour()].msg+'</p>';
   h+='<button class="det" data-go="details">📊 Voir tous les détails →</button></div>';
@@ -910,7 +1114,7 @@ function vueReglages(){
       [['on','Oui'],['off','Non']].map(function(o){var on=((cfg&&cfg.stats)||'on')===o[0];return '<button type="button" role="radio" aria-checked="'+on+'" data-a="stats" data-n="'+o[0]+'" class="'+(on?'on':'')+'">'+o[1]+'</button>'}).join('')+'</div><small class="num-app">Numéro de cet appareil : <b>'+esc(numeroAppareil())+'</b></small>'+(!estLocal()?'<form id="fSurnom" class="surnom"><label class="f">Nom de cet appareil dans le compteur (facultatif)<input name="n" maxlength="20" placeholder="ex. papa" value="'+esc((cfg&&cfg.surnom)||'')+'"></label><button type="submit">OK</button></form>':'')+'</div>':'')+
     '</section>';
   // v3.6 : faire connaître l'application (lien public, sans aucune donnée ni clé)
-  var lp=lienPublic(),svgp=qrSVG(lp);
+  var lp=lienPublic()+'?via=lien',svgp=qrSVG(lienPublic()+'?via=qr');
   h+='<section class="card"><h2>📣 Faire connaître l’application</h2><p class="hint">Pour un proche qui veut suivre <b>ses</b> pellets chez lui. Ce lien ne donne accès à aucune de vos données : il démarre avec un carnet vide, rangé sur son téléphone.</p>'+
     '<div class="invite">'+(svgp?'<div class="qr">'+svgp+'</div>':'')+'<div class="invtxt"><p class="hint"><b>À côté de vous :</b> il vise ce QR code avec l’appareil photo.</p><p class="hint"><b>À distance :</b> envoyez-lui le lien.</p>'+
     '<div class="row">'+(navigator.share?'<button data-a="sharepublic" class="primary">Envoyer le lien…</button>':'')+'<button data-a="copypublic">Copier le lien</button></div></div></div>'+
@@ -925,6 +1129,7 @@ function vueReglages(){
     '<button class="x" data-a="pdel" data-id="'+esc(pc.id)+'"'+(pieces().length<2?' disabled':'')+' aria-label="Retirer '+esc(pc.nom)+'">×</button></div>'});
   h+='<form id="fPiece" class="row"><input id="r-pnew" name="nom" placeholder="Ajouter une pièce" required><button type="submit">Ajouter</button></form></section>';
   if(S&&S.foyer)h+=vueStockReglages()+vueAnDernierReglages();
+  h+='<p class="hint" style="text-align:center"><button type="button" class="lnk" data-a="visite">👆 Revoir la visite guidée</button></p>';
   if(POELE_ACTIF)h+=vuePoeleReglages();
   h+='<section class="card"><h2>Pellets</h2><div class="row"><label class="f">Poids d’un sac (kg)<input type="number" data-r="poidsSac" id="r-poids" value="'+R.poidsSac+'" min="1"></label><label class="f">Prix d’un sac (€)<input type="number" step="0.01" data-r="prixSac" id="r-prix" value="'+R.prixSac+'" min="0"></label><label class="f">Sacs par palette<input type="number" data-r="sacsPalette" id="r-palette" value="'+(R.sacsPalette||72)+'" min="1" step="1"></label></div>'+
     '<label class="f">Saison en cours<input type="text" data-r="saison" id="r-saison" value="'+esc(R.saison)+'"></label>'+
@@ -1195,15 +1400,16 @@ function ecranOuverture(){try{ // v5.13 : la vraie vidéo du poêle de Benoît ;
   var g='';for(var i=0;i<46;i++)g+='<i style="--d:'+(0.05+i*0.045).toFixed(2)+'s;--x:'+(Math.random()*70-35).toFixed(0)+'px;--r:'+Math.round(Math.random()*180)+'deg"></i>';
   o.innerHTML='<video class="ov-video" src="feu.mp4?v=2" muted autoplay loop playsinline webkit-playsinline preload="auto"></video><div class="ov-voile"></div>'+
     '<div class="ov-grains">'+g+'</div><div class="ov-titre">Suivi pellets</div>'+
-    '<div class="ov-bouton"><span class="ov-rond">'+(sonActif()?'🔊':'🔥')+'</span><span class="ov-txt">'+'Touchez l’écran pour<br>ouvrir l’application'+'</span></div>'+
-    (sonActif()?'<div class="ov-aide">🔊 Montez le son pour entendre les pellets</div>':'');
+    '<div class="ov-bouton"><span class="ov-txt">'+'Touchez l’écran pour<br>remettre des pellets'+'</span></div>'+
+    ''; // v5.32 : plus de haut-parleur à l'écran ; le bruit des pellets joue toujours quand on touche
   document.body.appendChild(o);
   var v=o.querySelector('video');try{v.muted=true;var pp=v.play();if(pp&&pp.catch)pp.catch(function(){})}catch(x){}
   v.addEventListener('error',function(){o.classList.add('sans-video')});
   var verse=false,tFin=null,tAuto;
   function fin(){clearTimeout(tAuto);clearTimeout(tFin);if(!o.parentNode)return;o.classList.add('part');setTimeout(function(){if(o.parentNode)o.remove()},500)}
-  function verser(){if(verse){fin();return}verse=true;clearTimeout(tAuto);o.classList.add('ov-on');jouerPellets();tFin=setTimeout(fin,3300)}
-  // v5.18 : plus d'ouverture automatique : le feu reste jusqu'à ce qu'on touche l'écran (idée de Benoît : tout le monde entend le son)
+  function verser(){if(verse){fin();return}verse=true;clearTimeout(tAuto);o.classList.add('ov-on');jouerPellets();tFin=setTimeout(fin,2600)}
+  // v5.41 : l'application s'ouvre seule après 2 s (conseils : écran d'accueil court) ; un toucher avant donne les pellets et le bruit
+  tAuto=setTimeout(fin,2000);
   o.addEventListener('click',verser);
 }catch(e){}}
 
@@ -1222,22 +1428,127 @@ function finStock(A,reste){if(reste<=0)return {date:ymd(new Date()),jours:0};
   for(var i=0;i<jours.length;i++){var s=tauxPour(A,PREV[jours[i]].moy);if(s==null)break;acc+=s;n++;last=jours[i];if(acc>=reste)return {date:jours[i],jours:i}}
   var pj=n?acc/n:A.rate;if(!pj)return null;var j=Math.ceil((reste-acc)/pj),dt=new Date(last+'T12:00:00');dt.setDate(dt.getDate()+j);
   return {date:ymd(dt),jours:Math.round((dt-new Date())/864e5),approx:true}}
-function vueStock(A){var E=stockEtat();
-  if(!E)return '<button class="det" data-go="reglages" data-cible="stock">📦 Suivre mon stock de sacs</button>';
-  var r=Math.round(E.reste*2)/2,fs=A.rate!=null||Object.keys(PREV).length?finStock(A,E.reste):null,alerte=r<=10||(fs&&fs.jours!=null&&fs.jours<=14);
-  var h='<section class="card stock-card'+(alerte?' alerte':'')+'"><h2>📦 Mon stock</h2>';
-  if(r<=0)h+='<div class="stock-chiffre">0 <small>sac</small></div><p>D’après vos notes, le stock est épuisé. Si ce n’est pas le cas, corrigez-le dans les Réglages.</p>';
-  else{h+='<div class="stock-chiffre">'+nfs(r)+' <small>sac'+(r>=2?'s':'')+'</small></div>';
-    if(fs&&fs.jours>90)h+='<p>De quoi tenir <b>plus de 3 mois</b> au rythme actuel.</p>';
-    else if(fs)h+='<p>De quoi tenir jusqu’au <b>'+(fs.approx?'≈ ':'')+fds(fs.date+'T12:00')+'</b>'+(fs.jours!=null&&fs.jours>=0?' (environ '+fs.jours+' jour'+(fs.jours>1?'s':'')+')':'')+', selon la météo prévue.</p>';
-    if(alerte)h+='<p class="stock-alerte">⚠️ Pensez à recommander des pellets.</p>'}
-  return h+'<button type="button" class="lien" data-go="reglages" data-cible="stock">+ Noter un achat ou corriger le stock</button></section>'}
-function vueStockReglages(){var E=stockEtat(),mv=stockMv().filter(function(m){return !m.suppr}).slice().sort(function(a,b){return a.t<b.t?1:-1}).slice(0,6);
-  var h='<section class="card" id="stock"><h2>📦 Mon stock de sacs</h2>'+(E?'<p>Stock actuel : <b>'+nfs(Math.max(0,Math.round(E.reste*2)/2))+' sac'+(E.reste>=2?'s':'')+'</b>'+(E.eur?' · achats notés : '+nf(E.eur)+' €':'')+'</p>':'<p class="hint">Indiquez combien de sacs vous avez en réserve : chaque chargement les décomptera, et l’application vous dira jusqu’à quand ils tiennent.</p>')+
-    '<form id="fInv" class="stack"><label class="f">J’ai actuellement en réserve (sacs)<input name="sacs" type="number" inputmode="decimal" min="0" max="5000" step="0.5" required></label><button class="primary" type="submit">'+(E?'Corriger le stock':'Commencer le suivi')+'</button></form>'+
-    '<form id="fAchat" class="stack"><label class="f">Achat : nombre de sacs<input name="sacs" type="number" inputmode="decimal" min="0.5" max="5000" step="0.5" required placeholder="'+(F().sacsPalette||72)+' pour une palette"></label>'+
+// v5.24 : petite fenêtre (« feuille » façon iPhone) pour le stock, au lieu de tout l'écran des Réglages
+function enregistrerStock(f){var n=num(f.sacs.value);if(n==null||n<0||(f.id==='fAchat'&&!(n>0))){toast('Indiquez un nombre de sacs');return false}
+  var mvt=f.id==='fInv'?{id:newId(),type:'inv',t:nowDT(),sacs:n,maj:Date.now()}:{id:newId(),type:'achat',t:(!f.date.value||f.date.value===ymd(new Date()))?nowDT():f.date.value+'T12:00',sacs:n,prix:num(f.prix.value)||null,par:cfg&&cfg.prenom||'',maj:Date.now()};
+  S.foyer.stock=(S.foyer.stock||[]).concat([mvt]);S.foyer.maj=Date.now();sauver(f.id==='fInv'?'Stock : '+nfs(n)+' sacs':'Achat : '+nfs(n)+' sacs');render();toast(f.id==='fInv'?'Stock enregistré':'Achat ajouté');return true}
+function fermerFeuille(){var o=document.querySelector('.feuille-fond');if(!o)return;var fl=o.querySelector('.feuille');if(fl)fl.style.transform='';o.classList.remove('ouverte');
+  var av=o._avant;setTimeout(function(){if(o.parentNode)o.remove();try{if(av&&av.focus&&document.body.contains(av))av.focus({preventScroll:true})}catch(e){}},280)}
+// v5.26 : comme sur iPhone, on referme la petite fenêtre en la glissant vers le bas ; clavier : Échap ferme, Tab reste dans la fenêtre (VoiceOver)
+function ameliorerFeuille(o){try{var fl=o.querySelector('.feuille');if(!fl)return;o._avant=document.activeElement;
+  var y0=null,dy=0,t0=0;
+  fl.addEventListener('touchstart',function(e){var t=e.target;if(t.closest('input,select,textarea'))return;var c=fl.querySelector('.feuille-corps');if(c&&c.scrollTop>0&&!t.closest('.poignee,.feuille-barre'))return;y0=e.touches[0].clientY;dy=0;t0=Date.now();fl.style.transition='none'},{passive:true});
+  fl.addEventListener('touchmove',function(e){if(y0==null)return;dy=Math.max(0,e.touches[0].clientY-y0);fl.style.transform=dy?'translateY('+dy+'px)':''},{passive:true});
+  function fin(){if(y0==null)return;fl.style.transition='';var v=dy/Math.max(1,Date.now()-t0);y0=null;if(dy>110||(dy>40&&v>0.6))fermerFeuille();else fl.style.transform=''}
+  fl.addEventListener('touchend',fin);fl.addEventListener('touchcancel',fin);
+  o.addEventListener('keydown',function(e){if(e.key==='Escape'){e.preventDefault();fermerFeuille();return}
+    if(e.key==='Tab'){var f=[].slice.call(fl.querySelectorAll('button,input,select,textarea,[tabindex]')).filter(function(x){return !x.disabled&&x.offsetParent!==null});if(!f.length)return;
+      var a=f[0],z=f[f.length-1];if(e.shiftKey&&document.activeElement===a){e.preventDefault();z.focus()}else if(!e.shiftKey&&document.activeElement===z){e.preventDefault();a.focus()}}});
+  var titre=fl.querySelector('.feuille-barre b');if(titre){titre.id='feuille-titre';fl.setAttribute('aria-labelledby','feuille-titre');fl.removeAttribute('aria-label')}
+  var poi=fl.querySelector('.poignee');if(poi)poi.setAttribute('aria-hidden','true')}catch(e){}}
+function ouvrirFeuilleDetail(){fermerFeuille();var I=infoStock(analyse());if(!I){ouvrirFeuille('inv');return}
+  var mv=stockMv().filter(function(m){return !m.suppr}).slice().sort(function(a,b){return a.t<b.t?1:-1}).slice(0,4);
+  var c='<div class="fd-chiffre">'+nfs(Math.max(0,I.r))+' <small>sac'+(I.r>=2?'s':'')+'</small></div>'+
+    (I.r<=0?'<p>D’après vos notes, le stock est épuisé.</p>':(I.fs?'<p>De quoi tenir <b>'+texteDuree(I.fs)+'</b>'+(I.fs.jours!=null&&I.fs.jours<=90&&I.fs.jours>=0?' (environ '+I.fs.jours+' jour'+(I.fs.jours>1?'s':'')+')':'')+', selon la météo prévue.</p>':''))+
+    (I.alerte?'<p class="stock-alerte">⚠️ Pensez à recommander des pellets.</p>':'')+
+    '<div class="deux-btn"><button type="button" data-f="achat">+ Nouvel achat</button><button type="button" data-f="inv">Corriger</button></div>';
+  if(mv.length){c+='<ul class="list fd-liste">';mv.forEach(function(m){c+='<li><span>'+(m.type==='inv'?'Stock compté : <b>'+nfs(m.sacs)+'</b>':'Achat : <b>+'+nfs(m.sacs)+'</b>'+(m.prix?' · '+nf(m.prix)+' €':''))+' · '+fds(m.t)+'</span></li>'});c+='</ul>'}
+  var o=document.createElement('div');o.className='feuille-fond';
+  o.innerHTML='<div class="feuille" role="dialog" aria-modal="true" aria-label="Mon stock"><div class="poignee" aria-hidden="true"></div><div class="feuille-barre"><span></span><b>Mon stock</b><button type="button" class="f-ok f-fermer">OK</button></div><div class="feuille-corps">'+c+'</div></div>';
+  document.body.appendChild(o);ameliorerFeuille(o);requestAnimationFrame(function(){o.classList.add('ouverte')});
+  var fe=o.querySelector('.f-fermer');setTimeout(function(){try{fe.focus({preventScroll:true})}catch(e){}},300);
+  o.addEventListener('click',function(ev){if(ev.target===o||ev.target.closest('.f-fermer')){fermerFeuille();return}var b=ev.target.closest('[data-f]');if(b)ouvrirFeuille(b.getAttribute('data-f'))})}
+function ouvrirFeuille(type){fermerFeuille();var achat=type==='achat',E=stockEtat(),P=F().sacsPalette||72;
+  var corps=achat?
+    '<label class="f">Nombre de sacs<input name="sacs" type="number" inputmode="decimal" min="0.5" max="5000" step="0.5" required></label>'+
+    '<div class="puces"><button type="button" data-v="'+P+'">1 palette ('+P+')</button><button type="button" data-v="'+(P/2)+'">½ palette ('+nfs(P/2)+')</button><button type="button" data-v="10">10 sacs</button></div>'+
     '<label class="f">Date de livraison<input name="date" type="date" required value="'+ymd(new Date())+'"></label>'+
-    '<label class="f">Prix payé en tout (€, facultatif)<input name="prix" type="number" inputmode="decimal" min="0" step="0.01"></label><button type="submit">Ajouter l’achat</button></form>';
+    '<label class="f">Prix payé en tout (€) <span class="opt">facultatif</span><input name="prix" type="number" inputmode="decimal" min="0" step="0.01"></label>'
+   :'<label class="f">Combien de sacs avez-vous en réserve ?<input name="sacs" type="number" inputmode="decimal" min="0" max="5000" step="0.5" required'+(E?' placeholder="'+nfs(Math.max(0,Math.round(E.reste*2)/2))+' d’après l’application"':'')+'></label>'+
+    '<p class="hint small">Chaque chargement sera ensuite décompté tout seul.</p>';
+  var o=document.createElement('div');o.className='feuille-fond';
+  o.innerHTML='<form class="feuille" id="'+(achat?'fAchat':'fInv')+'" role="dialog" aria-modal="true" aria-label="'+(achat?'Nouvel achat':'Mon stock')+'"><div class="poignee" aria-hidden="true"></div>'+
+    '<div class="feuille-barre"><button type="button" class="f-annuler">Annuler</button><b>'+(achat?'Nouvel achat':'Mon stock')+'</b><button type="submit" class="f-ok">'+(achat?'Ajouter':'OK')+'</button></div>'+
+    '<div class="feuille-corps">'+corps+'</div></form>';
+  document.body.appendChild(o);ameliorerFeuille(o);requestAnimationFrame(function(){o.classList.add('ouverte')});
+  var f=o.querySelector('form');
+  o.addEventListener('click',function(ev){if(ev.target===o||ev.target.closest('.f-annuler')){fermerFeuille();return}
+    var pc=ev.target.closest('[data-v]');if(pc){f.sacs.value=pc.getAttribute('data-v');f.sacs.focus()}});
+  f.addEventListener('submit',function(ev){ev.preventDefault();if(enregistrerStock(f))fermerFeuille()});
+  setTimeout(function(){try{f.sacs.focus()}catch(e){}},300)}
+function infoStock(A){var E=stockEtat();if(!E)return null;var r=Math.round(E.reste*2)/2,fs=(A.rate!=null||Object.keys(PREV).length)?finStock(A,E.reste):null;
+  return {E:E,r:r,fs:fs,alerte:r<=10||!!(fs&&fs.jours!=null&&fs.jours<=14)}}
+function texteDuree(fs){if(!fs)return '';if(fs.jours>90)return 'plus de 3 mois';return 'jusqu’au '+(fs.approx?'≈ ':'')+fds(fs.date+'T12:00')}
+// v5.28 : petit QR en bas de l'accueil pour faire connaître l'application (adresse publique, jamais la clé familiale)
+function lignePartage(){var lp=lienPublic(),q=qrSVG(lp+'?via=qr');
+  return '<button type="button" class="ligne-stock ligne-partage" data-a="feuillePartage"><span class="lp-qr" aria-hidden="true">'+q+'</span>'+
+    '<span class="ls-txt"><b>Obtenir cette application</b></span><span class="ls-chev" aria-hidden="true">›</span></button>'}
+function ouvrirFeuillePartage(){fermerFeuille();var lp=lienPublic()+'?via=lien';
+  var c='<div class="fp-qr">'+qrSVG(lienPublic()+'?via=qr')+'</div>'+
+    (navigator.share?'<button type="button" class="fp-btn" data-f="share">Envoyer le lien…</button>':'<button type="button" class="fp-btn" data-f="copie">Copier le lien</button>');
+  var o=document.createElement('div');o.className='feuille-fond';
+  o.innerHTML='<div class="feuille" role="dialog" aria-modal="true"><div class="poignee" aria-hidden="true"></div><div class="feuille-barre"><span></span><b>Obtenir cette application</b><button type="button" class="f-ok f-fermer">OK</button></div><div class="feuille-corps">'+c+'</div></div>';
+  document.body.appendChild(o);ameliorerFeuille(o);requestAnimationFrame(function(){o.classList.add('ouverte')});statistique('partage-qr');
+  o.addEventListener('click',function(ev){if(ev.target===o||ev.target.closest('.f-fermer')){fermerFeuille();return}var b=ev.target.closest('[data-f]');if(!b)return;
+    statistique('partage');
+    if(b.getAttribute('data-f')==='share'){try{navigator.share({title:'Suivi pellets',text:'Pour savoir combien de sacs de pellets prévoir selon la météo :',url:lp}).catch(function(){})}catch(e){}}
+    else{try{navigator.clipboard.writeText(lp).then(function(){toast('Lien copié')},function(){toast(lp)})}catch(e){toast(lp)}}})}
+// v5.33 : visite guidée animée (1re fois) et « Premiers pas » avec félicitations à chaque étape
+function lsBrut(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function lsPut(k,v){try{if(v==null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(e){}}
+var ETAPES_VISITE=[
+  {sel:'.act.a2',titre:'Notez chaque chargement',txt:'À chaque fois que vous remplissez le poêle, touchez ici et indiquez le nombre de sacs.'},
+  {sel:'.t.sacs',titre:'Votre consommation',txt:'Ici, le total de sacs de la saison. Après 2 chargements, l’appli prévoit vos sacs de la semaine selon la météo.'},
+  {sel:'.act.a1',titre:'Les températures (facultatif)',txt:'Notez la température de vos pièces, pour voir l’effet du chauffage.'},
+  {sel:'.gear',titre:'Les réglages',txt:'Votre stock de sacs, la taille de votre palette et le reste se règlent ici.'}];
+function finVisite(){var o=document.querySelector('.visite');lsPut('suivi-visite-vue','1');window.removeEventListener('resize',placerVisite);window.removeEventListener('scroll',placerVisite,true);document.removeEventListener('keydown',toucheVisite);
+  if(o){o.classList.remove('on');setTimeout(function(){if(o.parentNode)o.remove()},300)}}
+function toucheVisite(e){if(e.key==='Escape')finVisite()}
+// v5.38 : position recalculée après le défilement (le Mac défilait encore et la bulle partait hors de l'écran), bulle toujours gardée dans l'écran, bouton « Passer » toujours visible en haut
+function placerVisite(){var o=document.querySelector('.visite');if(!o)return;var st=ETAPES_VISITE[+o.dataset.i||0];var el=st&&document.querySelector(st.sel);if(!el)return;
+  var r=el.getBoundingClientRect(),m=8,W=window.innerWidth,H=window.innerHeight,trou=o.querySelector('.vi-trou'),bu=o.querySelector('.vi-bulle'),ma=o.querySelector('.vi-main');
+  trou.style.cssText='left:'+(r.left-m)+'px;top:'+(r.top-m)+'px;width:'+(r.width+2*m)+'px;height:'+(r.height+2*m)+'px';
+  ma.style.cssText='left:'+(r.left+r.width/2-14)+'px;top:'+(r.top+r.height/2-6)+'px';
+  var w=Math.min(340,W-24);bu.style.width=w+'px';bu.style.left=Math.max(12,Math.min(W-w-12,r.left+r.width/2-w/2))+'px';bu.style.bottom='auto';
+  var bh=bu.offsetHeight||170,top=r.bottom+m+14;if(top+bh>H-12)top=r.top-m-14-bh;top=Math.max(12,Math.min(H-bh-12,top));bu.style.top=top+'px'}
+function lancerVisite(i){i=i||0;var st=ETAPES_VISITE[i];if(!st){finVisite();return}
+  var el=document.querySelector(st.sel);if(!el){lancerVisite(i+1);return}
+  var o=document.querySelector('.visite');
+  if(!o){o=document.createElement('div');o.className='visite';o.setAttribute('role','dialog');o.setAttribute('aria-modal','true');
+    o.innerHTML='<div class="vi-trou"></div><div class="vi-main" aria-hidden="true">👆</div><button type="button" class="vi-quitter">Passer la visite ✕</button><div class="vi-bulle"><div class="vi-pas"></div><b class="vi-titre"></b><p class="vi-txt"></p><div class="vi-btns"><button type="button" class="vi-passer">Passer</button><button type="button" class="vi-suite">Suivant</button></div></div>';
+    document.body.appendChild(o);requestAnimationFrame(function(){o.classList.add('on')});
+    o.addEventListener('click',function(e){if(e.target.closest('.vi-passer,.vi-quitter'))finVisite();else if(e.target.closest('.vi-suite'))lancerVisite(+o.dataset.i+1)});
+    window.addEventListener('resize',placerVisite);window.addEventListener('scroll',placerVisite,true);document.addEventListener('keydown',toucheVisite)}
+  o.dataset.i=i;
+  o.querySelector('.vi-pas').textContent='Étape '+(i+1)+' sur '+ETAPES_VISITE.length;
+  o.querySelector('.vi-titre').textContent=st.titre;o.querySelector('.vi-txt').textContent=st.txt;
+  o.querySelector('.vi-suite').textContent=i===ETAPES_VISITE.length-1?'C’est parti !':'Suivant';
+  try{el.scrollIntoView({block:'center',behavior:'auto'})}catch(x){el.scrollIntoView()}
+  requestAnimationFrame(function(){requestAnimationFrame(function(){placerVisite();var bu=o.querySelector('.vi-bulle');bu.classList.remove('pop');void bu.offsetWidth;bu.classList.add('pop');
+    try{o.querySelector('.vi-suite').focus({preventScroll:true})}catch(x){}})})}
+function nbChargements(){try{return chargementsSaison().length}catch(e){return 0}}
+function vuePremiersPas(A){var n=nbChargements(),pret=A&&A.rate!=null;if(pret||lsBrut('suivi-premiers-pas')==='off')return '';var tropTot=n>=2;if(n>2)n=2;
+  var fait=1+n,tot=3,reste=tot-fait;
+  var msg=n===0?'👏 Bravo, votre foyer est créé ! Plus que <b>2 étapes</b> et votre application est prête.':(tropTot?'Presque ! Notez votre prochain chargement <b>au moins 6 heures après le premier</b> : l’appli a besoin d’un peu de recul pour calculer votre consommation.':'👏 Bravo, premier chargement noté ! Plus qu’<b>une étape</b> et votre application est prête.');if(tropTot){fait=2}
+  var et=[['Créer votre foyer',true],['Noter un premier chargement',n>=1],['Noter un deuxième chargement, quelques heures plus tard',false]];
+  return '<section class="card pp"><div class="pp-tete"><h2>👋 Premiers pas</h2><button type="button" class="pp-x" data-a="ppOff" aria-label="Masquer">×</button></div>'+
+    '<p class="pp-msg">'+msg+'</p><div class="pp-barre" role="progressbar" aria-valuemin="0" aria-valuemax="'+tot+'" aria-valuenow="'+fait+'"><i style="width:'+Math.round(100*fait/tot)+'%"></i></div>'+
+    '<ol class="pp-liste">'+et.map(function(e,k){if(e[1])return '<li class="ok"><span>✓</span>'+e[0]+'</li>';return '<li><button type="button" class="pp-go" data-go="chargement"><span></span><em>'+e[0]+'</em><b aria-hidden="true">›</b></button></li>'}).join('')+'</ol>'+
+    '<p class="hint">Ensuite, l’appli prévoit vos sacs de la semaine selon la météo. <button type="button" class="lnk" data-a="visite">Revoir la visite guidée</button></p></section>'}
+function feterAppliPrete(){if(lsBrut('suivi-pret-vu'))return;lsPut('suivi-pret-vu','1');
+  var o=document.createElement('div');o.className='pret';o.setAttribute('role','dialog');o.setAttribute('aria-modal','true');
+  var c='';for(var i=0;i<40;i++)c+='<i style="--x:'+(Math.random()*100).toFixed(0)+'%;--d:'+(Math.random()*.8).toFixed(2)+'s;--c:'+['#d9611a','#f2b134','#2f8f5b','#3456d6','#e05a8c'][i%5]+'"></i>';
+  o.innerHTML='<div class="pret-conf" aria-hidden="true">'+c+'</div><div class="pret-carte"><div class="pret-ico">🎉</div><h2>Bravo, votre application est prête !</h2><p>Avec vos deux chargements, elle peut maintenant prévoir vos sacs de la semaine selon la météo. Continuez à noter chaque remplissage : plus vous en notez, plus la prévision est juste.</p><button type="button" class="primary big">Voir ma prévision</button></div>';
+  document.body.appendChild(o);requestAnimationFrame(function(){o.classList.add('on')});
+  o.querySelector('button').onclick=function(){o.classList.remove('on');setTimeout(function(){o.remove()},300);var p=document.querySelector('.prev-card');if(p)p.scrollIntoView({behavior:'smooth',block:'center'})}}
+function vueStock(A){var I=infoStock(A); // v5.25 : une seule ligne compacte, on touche pour le détail
+  if(!I)return '<button class="det" data-a="feuilleInv">📦 Suivre mon stock de sacs</button>';
+  var sous=I.r<=0?'stock épuisé':(I.alerte?'pensez à recommander':(I.fs?'de quoi tenir '+texteDuree(I.fs):''));
+  return '<button type="button" class="ligne-stock'+(I.alerte?' alerte':'')+'" data-a="feuilleStock"><span class="ls-ic" aria-hidden="true">'+(I.alerte?'⚠️':'📦')+'</span>'+
+    '<span class="ls-txt"><b>Stock : '+nfs(Math.max(0,I.r))+' sac'+(I.r>=2?'s':'')+'</b><small>'+sous+'</small></span><span class="ls-chev" aria-hidden="true">›</span></button>'}
+function vueStockReglages(){var E=stockEtat(),mv=stockMv().filter(function(m){return !m.suppr}).slice().sort(function(a,b){return a.t<b.t?1:-1}).slice(0,5);
+  var h='<section class="card" id="stock"><h2>📦 Mon stock de sacs</h2>'+(E?'<p class="stock-ligne">Il vous reste <b>'+nfs(Math.max(0,Math.round(E.reste*2)/2))+' sac'+(E.reste>=2?'s':'')+'</b>'+(E.eur?' · achats notés : '+nf(E.eur)+' €':'')+'</p>':'<p class="hint">Indiquez combien de sacs vous avez en réserve : chaque chargement les décomptera.</p>')+
+    '<div class="deux-btn"><button type="button" data-a="feuilleInv">'+(E?'Corriger le stock':'Indiquer mon stock')+'</button><button type="button" data-a="feuilleAchat">+ Nouvel achat</button></div>';
   if(mv.length){h+='<ul class="list">';mv.forEach(function(m){h+='<li><span>'+(m.type==='inv'?'Stock compté : <b>'+nfs(m.sacs)+'</b>':'Achat : <b>+'+nfs(m.sacs)+'</b>'+(m.prix?' · '+nf(m.prix)+' €':''))+' · '+fds(m.t)+'</span><button type="button" class="x" data-a="stockDel" data-id="'+esc(m.id)+'" aria-label="Supprimer">×</button></li>'});h+='</ul>'}
   return h+'</section>'}
 function prochainRemplissage(A){var ch=chargementsSaison();if(!ch.length||A.rate==null)return null;
@@ -1420,7 +1731,10 @@ function render(){appliquerStyle();garderConnexionDansAdresse();
   if(mode==='connexion')e='bienvenue';else if(mode==='chargement'||!S)e='attente';else if(!S.foyer)e='foyer';
   if(e==='attente'){app.innerHTML=vueChargementDonnees();Fond.montrer(true,null);return}
   var v={bienvenue:vueBienvenue,foyer:vueFoyer,accueil:vueAccueil,temperatures:vueTemperatures,chargement:vueChargement,details:vueDetails,reglages:vueReglages}[e]||vueAccueil;
+  var vieuxFv=app.querySelector('video.fv'); // v5.27 : la vraie flamme vidéo continue sans à-coup d'un affichage à l'autre
   app.innerHTML=v();
+  try{var neufFv=app.querySelector('video.fv');if(neufFv){if(vieuxFv&&!vieuxFv.error&&vieuxFv.readyState>1){neufFv.parentNode.replaceChild(vieuxFv,neufFv);var pv=vieuxFv.play();if(pv&&pv.catch)pv.catch(function(){})}
+    else{neufFv.muted=true;neufFv.addEventListener('playing',function(){document.documentElement.classList.add('fv-ok')});neufFv.addEventListener('error',function(){document.documentElement.classList.remove('fv-ok')});var pn=neufFv.play();if(pn&&pn.catch)pn.catch(function(){})}}}catch(x){}
   Object.keys(garde).forEach(function(id){var el=document.getElementById(id);if(el){el.value=garde[id];el.dataset.tape='1'}});
   if(foc){var fe=document.getElementById(foc);if(fe&&fe.focus)try{fe.focus({preventScroll:true})}catch(x){}}
   var dh=null;try{dh=(e==='accueil'&&S&&S.foyer)?dehorsMaintenant().v:null}catch(err){}
@@ -1429,6 +1743,7 @@ function render(){appliquerStyle();garderConnexionDansAdresse();
   if(S&&S.ciel)Fond.ciel(cielType(),S.ciel.vent);
   Fond.montrer(e==='accueil'||e==='bienvenue',dh);
   if(e==='accueil')compter();
+  if(e==='accueil'&&ui.visite){ui.visite=false;setTimeout(function(){lancerVisite(0)},900)}
   if(e==='accueil'&&ui.fete){ui.fete=false;setTimeout(function(){var v=versement();setTimeout(function(){var c=document.getElementById('compteur');if(!c)return;var r=c.getBoundingClientRect();Fond.feu(r.left+r.width/2,r.top+r.height/2)},v?1350:0)},150)}
 }
 var dejaCompte=false;
@@ -1441,7 +1756,13 @@ function compter(){
   requestAnimationFrame(pas);
 }
 var toastT=null;
-function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(function(){t.classList.remove('on')},2600)}
+// v5.35 : après un enregistrement, on laisse le temps de voir que c'est fait avant de revenir à l'accueil
+function confirmer(ico,titre,sous,suite){try{var o=document.createElement('div');o.className='ok-ecran';o.setAttribute('role','status');
+  o.innerHTML='<div class="ok-carte"><div class="ok-rond">'+ico+'</div><b>'+esc(titre)+'</b>'+(sous?'<span>'+esc(sous)+'</span>':'')+'</div>';
+  document.body.appendChild(o);requestAnimationFrame(function(){o.classList.add('on')});
+  var fini=false;function go(){if(fini)return;fini=true;o.classList.remove('on');setTimeout(function(){if(o.parentNode)o.remove()},300);suite()}
+  o.addEventListener('click',go);setTimeout(go,1800)}catch(e){suite()}}
+function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(function(){t.classList.remove('on')},4500)}
 function lienPublic(){return location.origin+location.pathname}
 function copier(id){var t=document.getElementById(id);try{navigator.clipboard.writeText(t.value).then(function(){toast('Copié')},function(){t.select();toast('Sélectionné : faites Copier')})}catch(e){t.select();toast('Sélectionné : faites Copier')}}
 
@@ -1460,12 +1781,17 @@ app.addEventListener('click',function(ev){
   if(a==='poeleLire'){lirePoele(true);return}
   if(a==='poeleEdit'){ui.poeleEdit=true;render();return}
   if(a==='poeleAnnule'){ui.poeleEdit=false;render();return}
+  if(a==='visite'){aller('accueil');setTimeout(function(){lancerVisite(0)},500);return}
+  if(a==='ppOff'){lsPut('suivi-premiers-pas','off');render();return}
+  if(a==='feuilleStock'){ouvrirFeuilleDetail();return}
+  if(a==='feuillePartage'){ouvrirFeuillePartage();return}
+  if(a==='feuilleInv'||a==='feuilleAchat'){ouvrirFeuille(a==='feuilleAchat'?'achat':'inv');return}
   if(a==='stockDel'){var sid=b.getAttribute('data-id');(S.foyer.stock||[]).forEach(function(m){if(m.id===sid){m.suppr=true;m.maj=Date.now()}});S.foyer.maj=Date.now();sauver('Stock : suppression');render();return}
   if(a==='anOff'){if(S.foyer){delete S.foyer.anDernier;S.foyer.maj=Date.now();sauver('Hiver dernier effacé')}render();toast('Hiver dernier effacé');return}
   if(a==='poeleOff'){delete cfg.poele;lsSet(CFGKEY,cfg);lsDel(POELE_CLE);ui.poeleMsg='Poêle déconnecté de cet appareil.';ui.poeleErr='';suivrePoele();render();return}
   if(a==='style'){cfg.style=b.getAttribute('data-n');lsSet(CFGKEY,cfg);appliquerStyle();render();toast('Style : '+b.textContent);return}
   if(a==='anim'){cfg.anim=b.getAttribute('data-n');lsSet(CFGKEY,cfg);Fond.regler();render();toast('Animation : '+b.textContent);return}
-  if(a==='installer'){if(invitInstall){invitInstall.prompt();invitInstall.userChoice.finally(function(){invitInstall=null;renderFond()})}return}
+  if(a==='installer'){if(invitInstall){invitInstall.prompt();invitInstall.userChoice.finally(function(){invitInstall=null;renderFond()})}else guideInstall();return}
   if(a==='local'){commencerLocal();return}
   if(a==='exporter'){exporter();return}
   if(a==='eff1'){ui.confirmEff=true;render();return}
@@ -1481,7 +1807,7 @@ app.addEventListener('click',function(ev){
   else if(a==='copycsv')copier('csv');
   else if(a==='copylien')copier('lien');
   else if(a==='avance'){ui.avance=true;render()}
-  else if(a==='sharepublic'){statistique('partage');try{navigator.share({title:'Suivi pellets',text:'Une petite application gratuite pour suivre sa consommation de pellets selon le froid :',url:lienPublic()}).catch(function(){})}catch(e){copier('lienpublic')}}
+  else if(a==='sharepublic'){statistique('partage');try{navigator.share({title:'Suivi pellets',text:'Une petite application gratuite pour suivre sa consommation de pellets selon le froid :',url:lienPublic()+'?via=lien'}).catch(function(){})}catch(e){copier('lienpublic')}}
   else if(a==='copypublic'){statistique('partage');copier('lienpublic')}
   else if(a==='share'){try{navigator.share({title:'Suivi pellets',text:'Rejoins notre suivi des pellets :',url:document.getElementById('lien').value}).catch(function(){})}catch(e){copier('lien')}}
   else if(a==='invite'){ui.invite=!ui.invite;render()}
@@ -1508,33 +1834,33 @@ app.addEventListener('submit',function(ev){
     cfg.poele={relais:rel,email:em,mdp:md};lsSet(CFGKEY,cfg);ui.poeleEdit=false;ui.poeleErr='';lirePoele(true).then(function(){suivrePoele()});return}
   if(f.id==='fSurnom'){var sn=(f.n.value||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,20);
     cfg.surnom=sn;lsSet(CFGKEY,cfg);try{localStorage.removeItem('suivi-stat-ouv')}catch(e){}statsVisite();render();toast(sn?'Cet appareil s’appellera « '+sn+' » dans le compteur':'Nom retiré');return}
-  if(f.id==='fInv'||f.id==='fAchat'){var n=num(f.sacs.value);if(n==null||n<0||(f.id==='fAchat'&&!(n>0))){toast('Indiquez un nombre de sacs');return}
-    var mvt=f.id==='fInv'?{id:newId(),type:'inv',t:nowDT(),sacs:n,maj:Date.now()}:{id:newId(),type:'achat',t:(!f.date.value||f.date.value===ymd(new Date()))?nowDT():f.date.value+'T12:00',sacs:n,prix:num(f.prix.value)||null,par:cfg&&cfg.prenom||'',maj:Date.now()};
-    S.foyer.stock=(S.foyer.stock||[]).concat([mvt]);S.foyer.maj=Date.now();sauver(f.id==='fInv'?'Stock : '+nfs(n)+' sacs':'Achat : '+nfs(n)+' sacs');render();toast(f.id==='fInv'?'Stock enregistré':'Achat ajouté');return}
+  if(f.id==='fInv'||f.id==='fAchat'){enregistrerStock(f);return}
   if(f.id==='fAn'){var n=num(f.sacs.value),a1=f.debut.value,a2=f.fin.value;if(!(n>0)||!a1||!a2||a2<=a1){toast('Vérifiez le nombre de sacs et les dates');return}
     S.foyer.anDernier={sacs:n,debut:a1,fin:a2};S.foyer.maj=Date.now();AN.cle='';sauver('Hiver dernier : '+nfs(n)+' sacs');aller('accueil');toast('Hiver dernier enregistré');return}
   if(f.id==='fCharge'){var t=f.t&&f.t.value?f.t.value:nowDT();
     if(parseDT(t)>Date.now()+15*6e4){toast('Cette heure est dans le futur : vérifiez la date');return}
+    var rateAvant=null;try{rateAvant=analyse().rate}catch(x){}
     S.chargements.push({id:newId(),t:t,sacs:ui.charge,par:moi(),saison:F().saison,maj:Date.now()});sauver('Chargement : '+sacsTxt(ui.charge)+(moi()?' par '+moi():''));
-    var n=ui.charge;ui.charge=1;ui.autreHeure=false;ui.fete=true;ui.paletteAnim=Math.ceil(n);jouerPellets();statistique('chargement');aller('accueil');toast('🔥 '+sacsTxt(n)+' noté'+(n>=2?'s':'')+', merci !');
-    var c=document.getElementById('compteur');if(c){c.classList.add('pop')}return}
+    var n=ui.charge;ui.charge=1;ui.autreHeure=false;ui.fete=true;ui.paletteAnim=Math.ceil(n);jouerPellets();statistique('chargement');var nbc=nbChargements(),pret2=false;try{pret2=rateAvant==null&&analyse().rate!=null}catch(x){}
+    confirmer('🔥',sacsTxt(n)+' noté'+(n>=2?'s':''),nbc===1?'👏 Bravo ! Plus qu’une étape.':'Merci !',function(){aller('accueil');if(nbc===1)toast('👏 Bravo ! Premier chargement noté, plus qu’une étape.');if(pret2)setTimeout(feterAppliPrete,2600);
+      var c=document.getElementById('compteur');if(c){c.classList.add('pop')}});return}
   if(f.id==='fTemp'){var temps={},nb=0;Array.prototype.forEach.call(f.querySelectorAll('[data-piece]'),function(el){var v=num(el.value);if(v!=null&&v>-30&&v<45){temps[el.getAttribute('data-piece')]=Math.round(v*10)/10;nb++}});
     var ext=f.ext?num(f.ext.value):null;
     if(!nb&&ext==null){toast('Notez au moins une température');return}
     S.releves.push({id:newId(),t:nowDT(),temps:temps,ext:ext,par:moi(),saison:F().saison,maj:Date.now()});sauver('Températures'+(moi()?' par '+moi():''));
-    aller('accueil');toast(nb?'🌡️ '+nb+' pièce'+(nb>1?'s':'')+' enregistrée'+(nb>1?'s':''):'🌡️ Température dehors enregistrée');return}
+    confirmer('🌡️',nb?nb+' pièce'+(nb>1?'s':'')+' enregistrée'+(nb>1?'s':''):'Température dehors enregistrée','Merci !',function(){aller('accueil')});return}
   if(f.id==='fPiece'){var nom=f.nom.value.trim();if(!nom)return;var mx=0;pieces().forEach(function(p){var k=parseInt(String(p.id).slice(1),10);if(k>mx)mx=k});
     F().pieces.push({id:'p'+(mx+1)+'x'+Date.now().toString(36).slice(-3),nom:nom,source:'saisie'});F().maj=Date.now();sauver('Pièce ajoutée : '+nom);render();toast('Pièce ajoutée');return}
   if(f.id==='fFoyer'||f.id==='fCommune'){
     var com=f.commune.value.trim(),cp=f.cp.value.trim().toUpperCase();if(!com||!cp)return;
     var btn=f.querySelector('button[type=submit]');btn.disabled=true;btn.textContent='Recherche de la commune…';
     geocoder(com,cp).then(function(g){
-      if(!g){ui.err='Commune introuvable. Essayez sans « sur-Mer » ou sans tirets (ex. Etaples).';btn.disabled=false;render();toast('Commune introuvable');return}
+      if(!g){ui.err='Commune introuvable. Essayez sans « sur-Mer » ou sans tirets (ex. Boulogne au lieu de Boulogne-sur-Mer).';btn.disabled=false;render();toast('Commune introuvable');return}
       var nouveau=!S.foyer;
       if(nouveau){var noms=(f.pieces?f.pieces.value:'Salon').split(',').map(function(x){return x.trim()}).filter(Boolean);
         S.foyer={nom:com,commune:com,cp:cp,lat:g.lat,lon:g.lon,extSource:'auto',pieces:(noms.length?noms:['Salon']).map(function(n,i){return {id:'p'+(i+1),nom:n,source:'saisie'}}),poidsSac:15,prixSac:6.9,saison:'Hiver 2026-2027',historique:[],maj:Date.now()}}
       else{var chg=S.foyer.lat!==g.lat||S.foyer.lon!==g.lon;S.foyer.commune=com;S.foyer.cp=cp;S.foyer.lat=g.lat;S.foyer.lon=g.lon;S.foyer.maj=Date.now();if(chg)S.meteo={};ui.commune=false}
-      ui.err='';sauver('Foyer : '+com);aller('accueil');toast(g.approx?'⚠️ Météo prise pour '+g.lieu+' : vérifiez dans Réglages':(nouveau?'Foyer créé !':'Commune enregistrée'));
+      ui.err='';sauver('Foyer : '+com);if(nouveau&&!lsBrut('suivi-visite-vue'))ui.visite=true;aller('accueil');toast(g.approx?'⚠️ Météo prise pour '+g.lieu+' : vérifiez dans Réglages':(nouveau?'Foyer créé !':'Commune enregistrée'));
       Meteo.actualiser().then(function(c){if(c)sauver('Météo : '+com);renderFond()});
     }).catch(function(){ui.err='Impossible de chercher la commune (réseau ?).';btn.disabled=false;render()});
     return}
